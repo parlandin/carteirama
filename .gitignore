@@ -1,0 +1,8 @@
+.env
+**/node_modules
+**/target
+**/dist
+**/requirements.txt
+**/design
+.idea
+.vscode
