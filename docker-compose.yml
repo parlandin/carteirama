@@ -1,45 +1,36 @@
+# Base comum a todos os ambientes. Use junto com docker-compose.dev.yml ou docker-compose.prod.yml (veja o Makefile).
 services:
 
-  frontend:
+  api:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: carteirama-frontend
-    ports:
-      - "8080:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: carteirama-backend
+      context: ./apps/api
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/carteirama
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
-      database:
+      db:
         condition: service_healthy
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  database:
+  db:
     image: postgres:17-alpine
-    container_name: carteirama-database
     environment:
-      POSTGRES_DB: carteirama
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d carteirama"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  pgdata:

@@ -1,3 +1,13 @@
+# Dev: roda com spring-boot:run (o código é montado via volume, devtools reinicia ao recompilar)
+FROM maven:3.9-eclipse-temurin-25 AS dev
+
+WORKDIR /app
+
+EXPOSE 8080
+
+CMD ["mvn", "spring-boot:run"]
+
+
 # Build
 FROM maven:3.9-eclipse-temurin-25 AS build
 
@@ -19,7 +29,11 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
+RUN useradd --system --uid 1001 spring
+
 COPY --from=build /app/target/*.jar app.jar
+
+USER spring
 
 EXPOSE 8080
 

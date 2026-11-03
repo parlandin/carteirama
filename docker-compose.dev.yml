@@ -1,0 +1,45 @@
+# Dev: Vite com HMR e Spring Boot com devtools, código montado via volume.
+services:
+
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./infra/nginx/conf.d/default.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - api
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    environment:
+      # Bind mounts no Windows/macOS não propagam eventos de arquivo; o polling resolve
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+
+  api:
+    build:
+      target: dev
+    volumes:
+      - ./apps/api:/app
+      - m2:/root/.m2
+
+  db:
+    ports:
+      - "${DB_PORT:-5432}:5432"
+
+  adminer:
+    image: adminer
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      - db
+
+volumes:
+  m2:
