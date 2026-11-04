@@ -1,15 +1,15 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
-    // Escuta em 0.0.0.0 para o Nginx de dev alcançar o container
     host: true,
     port: 5173,
     watch: {
-      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+      usePolling: process.env.CHOKIDAR_USEPOLLING === "true",
     },
   },
-})
+});
