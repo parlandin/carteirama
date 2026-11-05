@@ -47,3 +47,10 @@ Em dev:
 - Adminer: http://localhost:8081 (servidor `db`)
 - Postgres: `localhost:5432`
 - A API roda com `mvn spring-boot:run` e devtools: recompile na IDE (o `target/` é montado no container) para reiniciar.
+- Depois de mudar dependências do front, rode `make dev-build`: o `node_modules` do container fica num volume anônimo, que só `--renew-anon-volumes` recria (`--build` sozinho mantém o antigo).
+
+## Migrations
+
+O schema é versionado com Flyway, e as migrations rodam quando a API sobe. O Hibernate só valida (`ddl-auto: validate`), então toda mudança no banco precisa de uma migration.
+
+Crie os arquivos em `apps/api/src/main/resources/db/migration/`, no formato `V<número>__<descricao>.sql` (ex.: `V2__create_users.sql`). Não edite uma migration que já rodou: o Flyway compara o checksum e a API deixa de subir. Para corrigir, crie uma nova.

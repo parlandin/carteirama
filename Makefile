@@ -7,7 +7,7 @@ dev:
 	$(DEV) up
 
 dev-build:
-	$(DEV) up --build
+	$(DEV) up --build --renew-anon-volumes
 
 dev-down:
 	$(DEV) down
