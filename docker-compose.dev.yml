@@ -26,6 +26,9 @@ services:
   api:
     build:
       target: dev
+    environment:
+      # Em dev o acesso é por http://localhost:8080; cookie Secure só vai por HTTPS
+      COOKIE_SECURE: "false"
     volumes:
       - ./apps/api:/app
       - m2:/root/.m2

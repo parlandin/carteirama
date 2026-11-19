@@ -8,6 +8,44 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: false
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: always
+    deserialization:
+      fail-on-unknown-properties: true
+      fail-on-null-for-primitives: true
+
+  session:
+    timeout: 12h
+
+server:
+  forward-headers-strategy: native
+  servlet:
+    session:
+      cookie:
+        name: SESSION
+        http-only: true
+        secure: ${COOKIE_SECURE:true}
+        same-site: lax
+        path: /
+
+springdoc:
+  api-docs:
+    path: /api/docs
+  swagger-ui:
+    path: /api/swagger
+
+logging:
+  pattern:
+    correlation: "[%X{request_id:-}] "
+
+carteirama:
+  frontend-url: ${FRONTEND_URL:http://localhost:8080}
+  trial-days: 14
+  suspend-after-days: 5
+  retention-days: 90
