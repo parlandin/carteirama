@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router";
 import { AdminLayout, AppLayout, GuestOnly } from "./layouts/AppLayout";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import Charges from "./pages/app/Charges";
 import ClientDetail from "./pages/app/ClientDetail";
 import ClientForm from "./pages/app/ClientForm";
 import Clients from "./pages/app/Clients";
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: "clientes/novo", element: <ClientForm /> },
       { path: "clientes/:id", element: <ClientDetail /> },
       { path: "clientes/:id/editar", element: <ClientForm /> },
+      { path: "cobrancas", element: <Charges /> },
     ],
   },
   {
