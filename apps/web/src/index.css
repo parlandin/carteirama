@@ -1,1 +1,76 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-hand: "Caveat", cursive;
+
+  --color-navy: #111b35;
+  --color-navy-2: #1b2747;
+  --color-ink: #111b35;
+  --color-muted: #55617a;
+  --color-paper: #edf2fa;
+  --color-paper-2: #f5f8fd;
+  --color-line: #d6deeb;
+
+  --color-blue: #2553e6;
+  --color-blue-soft: #e4ebfd;
+  --color-green: #167a3c;
+  --color-green-soft: #dcf3e3;
+  --color-amber: #fbaf24;
+  --color-amber-soft: #fdecc4;
+  --color-violet: #6d3ce0;
+  --color-red: #c53030;
+  --color-red-soft: #fde2e2;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@utility shadow-hard {
+  box-shadow: 6px 6px 0 0 var(--color-navy);
+}
+
+@utility shadow-hard-sm {
+  box-shadow: 4px 4px 0 0 var(--color-navy);
+}
+
+@utility shadow-hard-amber {
+  box-shadow: 6px 6px 0 0 var(--color-amber);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
