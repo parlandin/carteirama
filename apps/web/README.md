@@ -1,75 +1,45 @@
-# React + TypeScript + Vite
+# Carteirama · web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Front-end em React 19 + Vite + Tailwind 4, com React Router, TanStack Query e ícones Lucide.
 
-Currently, two official plugins are available:
+## Rodando
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+No Docker (recomendado), pela raiz do repositório: `make dev` e acesse http://localhost:8080. Depois de mudar dependências, rode `make dev-build`.
 
-## React Compiler
+Fora do Docker, com a API já rodando atrás do Nginx em `localhost:8080`:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+yarn install
+VITE_API_PROXY=http://localhost:8080 yarn dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Estrutura
 
 ```
+src/
+├── components/   # ui.tsx (botões, cards, campos, status...), Shell (sidebar/menu mobile), modais
+├── layouts/      # AppLayout, AdminLayout e GuestOnly (guardas de rota)
+├── lib/          # api (fetch + erros), auth, queries (TanStack Query), format, tipos
+└── pages/
+    ├── Landing.tsx
+    ├── auth/     # entrar, criar conta, esqueci/redefinir senha
+    ├── app/      # grupos, clientes, cobranças, exportar, assinatura, meus dados
+    └── admin/    # visão geral, contas, pagamentos, planos (carregadas sob demanda)
+```
+
+## Rotas
+
+| Rota | Tela |
+| --- | --- |
+| `/` | Landing page |
+| `/entrar`, `/criar-conta`, `/esqueci-a-senha` | Acesso |
+| `/reset-password?token=` | Nova senha (link enviado por e-mail pela API) |
+| `/app` | Grupos de clientes (início) |
+| `/app/grupos/novo`, `/app/grupos/:id`, `/app/grupos/:id/editar` | Grupos |
+| `/app/clientes`, `/app/clientes/novo`, `/app/clientes/:id`, `/app/clientes/:id/editar` | Clientes |
+| `/app/cobrancas` | Cobranças do mês |
+| `/app/exportar` | Exportar planilha |
+| `/app/assinatura`, `/app/conta` | Assinatura e dados da conta |
+| `/admin`, `/admin/contas`, `/admin/contas/:id`, `/admin/pagamentos`, `/admin/planos` | Painel admin |
+
+O mês selecionado fica na URL (`?mes=2026-10`). As cobranças do mês corrente são geradas automaticamente ao abrir Grupos ou Cobranças (a geração na API é idempotente).
