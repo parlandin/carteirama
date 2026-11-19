@@ -2,7 +2,9 @@
 **/node_modules
 **/target
 **/dist
-**/requirements.txt
+**/requirements.md
 **/design
 .idea
 .vscode
+# Documentos locais
+carteirama-banco-de-dados.md
