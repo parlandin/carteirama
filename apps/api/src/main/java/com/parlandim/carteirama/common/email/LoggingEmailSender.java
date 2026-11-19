@@ -1,10 +1,9 @@
 package com.parlandim.carteirama.common.email;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
+/** Usado quando não há provedor de e-mail configurado (ver EmailConfig). */
 @Slf4j
-@Component
 public class LoggingEmailSender implements EmailSender {
 
     @Override
