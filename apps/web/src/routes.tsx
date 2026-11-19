@@ -3,6 +3,9 @@ import { createBrowserRouter } from "react-router";
 import { AdminLayout, AppLayout, GuestOnly } from "./layouts/AppLayout";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import ClientDetail from "./pages/app/ClientDetail";
+import ClientForm from "./pages/app/ClientForm";
+import Clients from "./pages/app/Clients";
 import GroupDetail from "./pages/app/GroupDetail";
 import GroupForm from "./pages/app/GroupForm";
 import Groups from "./pages/app/Groups";
@@ -35,6 +38,10 @@ const router = createBrowserRouter([
       { path: "grupos/novo", element: <GroupForm /> },
       { path: "grupos/:id", element: <GroupDetail /> },
       { path: "grupos/:id/editar", element: <GroupForm /> },
+      { path: "clientes", element: <Clients /> },
+      { path: "clientes/novo", element: <ClientForm /> },
+      { path: "clientes/:id", element: <ClientDetail /> },
+      { path: "clientes/:id/editar", element: <ClientForm /> },
     ],
   },
   {
