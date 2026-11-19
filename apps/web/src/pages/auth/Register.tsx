@@ -141,7 +141,6 @@ export default function Register() {
         </Field>
 
         <div>
-          {/* Os links ficam fora do <label>: assim cada um abre a sua página, e só o resto marca a caixa. */}
           <div className="flex items-start gap-3 text-[15px]">
             <input
               id="terms"

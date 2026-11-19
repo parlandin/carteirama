@@ -11,7 +11,6 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "card", label: "Cartão" },
 ];
 
-/** Admin: registra o pagamento manual de uma fatura (Pix/boleto recebido fora do gateway). */
 export function MarkPaidModal({ invoice, accountName, onClose, onDone }: { invoice: Invoice | null; accountName?: string; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [paidAt, setPaidAt] = useState(today());
@@ -75,4 +74,3 @@ export function MarkPaidModal({ invoice, accountName, onClose, onDone }: { invoi
     </Modal>
   );
 }
-

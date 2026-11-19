@@ -1,7 +1,6 @@
 import { useSearchParams } from "react-router";
 import { addMonths, currentMonth, isValidMonth } from "./format";
 
-/** Mês selecionado, guardado na URL (?mes=2026-10) para sobreviver a recarregar e voltar. */
 export function useMonthParam() {
   const [params, setParams] = useSearchParams();
   const raw = params.get("mes");

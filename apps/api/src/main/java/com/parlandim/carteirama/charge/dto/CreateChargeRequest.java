@@ -15,7 +15,6 @@ public record CreateChargeRequest(
         @NotNull @Min(1) @Max(99_999_999) Integer amountCents,
         @NotNull LocalDate dueDate,
         @Size(max = 500) String note,
-        /** Sem valor, cria a cobrança recorrente do mês (comportamento anterior). */
         ChargeKind kind,
         @Size(max = 120) String description
 ) {

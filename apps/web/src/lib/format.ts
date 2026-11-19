@@ -16,18 +16,15 @@ export const MONTHS = [
   "Dezembro",
 ];
 
-/** 123456 -> "R$ 1.234,56" */
 export function money(cents: number | null | undefined): string {
   return brl.format((cents ?? 0) / 100).replace(/ /g, " ");
 }
 
-/** 123456 -> "1.234,56" (para preencher campos) */
 export function centsToInput(cents: number | null | undefined): string {
   if (cents == null) return "";
   return plain.format(cents / 100);
 }
 
-/** "1.234,56" / "1234.5" / "1234" -> 123456. Retorna null se inválido. */
 export function parseMoney(value: string): number | null {
   const v = value.trim().replace(/[R$\s]/g, "");
   if (!v) return null;
@@ -40,7 +37,6 @@ export function parseMoney(value: string): number | null {
   return Math.round(n * 100);
 }
 
-/** Máscara de digitação para valores: mantém dígitos, vírgula e ponto. */
 export function maskMoneyInput(value: string): string {
   return value.replace(/[^\d.,]/g, "").slice(0, 14);
 }
@@ -56,7 +52,6 @@ export function formatDocument(doc: string | null | undefined): string {
   return doc ?? "";
 }
 
-/** Máscara progressiva de CPF (até 11 dígitos) ou CNPJ (até 14). */
 export function maskDocument(value: string, kind: "cpf" | "cnpj" | "auto" = "auto"): string {
   const max = kind === "cpf" ? 11 : 14;
   const d = digits(value).slice(0, max);
@@ -90,21 +85,18 @@ export function maskZip(value: string): string {
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
 }
 
-/** "2026-10-05" ou ISO completo -> "05/10/2026" */
 export function date(value: string | null | undefined): string {
   if (!value) return "—";
   const [y, m, d] = value.slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }
 
-/** "2026-10-05" -> "05/10" */
 export function shortDate(value: string | null | undefined): string {
   if (!value) return "—";
   const [, m, d] = value.slice(0, 10).split("-");
   return `${d}/${m}`;
 }
 
-/** Data de um Instant no fuso de São Paulo, como "YYYY-MM-DD". */
 export function instantDay(value: string | null | undefined): string | null {
   if (!value) return null;
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(value));
@@ -114,7 +106,6 @@ export function instantDate(value: string | null | undefined): string {
   return date(instantDay(value));
 }
 
-/** Mês corrente no fuso do negócio, como "YYYY-MM". */
 export function currentMonth(): string {
   return today().slice(0, 7);
 }
@@ -129,13 +120,11 @@ export function addMonths(month: string, delta: number): string {
   return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
 }
 
-/** "2026-10" -> "Outubro 2026" */
 export function monthLabel(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return `${MONTHS[m - 1]} ${y}`;
 }
 
-/** "2026-10" -> "OUT 2026" */
 export function monthShort(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return `${MONTHS[m - 1].slice(0, 3).toUpperCase()} ${y}`;
@@ -145,7 +134,6 @@ export function isValidMonth(value: string | null): value is string {
   return !!value && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 }
 
-/** Sigla de duas letras para o ícone do grupo: "Assinatura SaaS" -> "AS". */
 export function initials(name: string): string {
   const words = name
     .trim()

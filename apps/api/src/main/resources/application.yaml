@@ -50,7 +50,5 @@ carteirama:
   suspend-after-days: 5
   retention-days: 90
   email:
-    # Sem chave, os e-mails só vão para o log. onboarding@resend.dev só entrega para o e-mail
-    # da conta Resend; troque EMAIL_FROM pelo seu domínio depois de verificá-lo na Resend.
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:Carteirama <onboarding@resend.dev>}

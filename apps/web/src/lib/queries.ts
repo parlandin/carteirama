@@ -32,7 +32,6 @@ export const keys = {
   invoices: ["invoices"] as const,
 };
 
-/** Depois de qualquer escrita, recarrega tudo o que depende de clientes, grupos ou cobranças. */
 export function useInvalidateData() {
   const qc = useQueryClient();
   return () =>
@@ -92,10 +91,6 @@ export function useInvoices(enabled = true) {
 
 const generated = new Set<string>();
 
-/**
- * As cobranças de um mês são criadas a partir dos clientes ativos. A geração é idempotente, então
- * rodamos uma vez por sessão para o mês corrente (pega clientes cadastrados depois da última geração).
- */
 export function useAutoGenerateCharges(enabled: boolean) {
   const qc = useQueryClient();
   useEffect(() => {
@@ -113,12 +108,9 @@ export function useAutoGenerateCharges(enabled: boolean) {
   }, [enabled, qc]);
 }
 
-/** Libera uma nova geração automática (ex.: depois de cadastrar um cliente). */
 export function resetAutoGenerate() {
   generated.clear();
 }
-
-/* ------------------------------------------------------------------ Admin */
 
 export function useAdminSummary() {
   return useQuery({ queryKey: ["admin", "summary"], queryFn: () => api.get<AdminSummary>("/admin/summary") });

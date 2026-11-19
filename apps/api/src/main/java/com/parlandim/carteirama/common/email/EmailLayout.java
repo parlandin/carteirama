@@ -5,17 +5,8 @@ import org.springframework.web.util.HtmlUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Monta o e-mail no visual do front (cores, cartão com borda grossa e "sombra" chapada, rótulos em
- * fonte mono) e, ao mesmo tempo, a versão em texto puro.
- * <p>
- * HTML de e-mail: só tabelas e estilos inline, porque Gmail e Outlook ignoram boa parte do CSS.
- * A sombra do front é imitada com bordas mais grossas à direita e embaixo; Figtree e JetBrains Mono
- * aparecem onde o cliente carrega fontes (Apple Mail, iOS), e nos outros caem em Arial e Courier.
- */
 public final class EmailLayout {
 
-    // Tokens de apps/web/src/index.css
     private static final String NAVY = "#111b35";
     private static final String MUTED = "#55617a";
     private static final String PAPER = "#edf2fa";
@@ -38,18 +29,15 @@ public final class EmailLayout {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 
-    /** @param baseUrl endereço do front, de onde vêm o logo e os links do rodapé. */
     public static EmailLayout create(String baseUrl) {
         return new EmailLayout(baseUrl);
     }
 
-    /** Texto que aparece ao lado do assunto na caixa de entrada. */
     public EmailLayout preheader(String value) {
         this.preheader = value;
         return this;
     }
 
-    /** Rótulo pequeno acima do título, no estilo "// Conta · senha". */
     public EmailLayout eyebrow(String value) {
         this.eyebrow = value;
         return this;
@@ -67,7 +55,6 @@ public final class EmailLayout {
         return this;
     }
 
-    /** Botão principal, com o link por extenso logo abaixo para quem não consegue clicar. */
     public EmailLayout button(String label, String url) {
         html.add("""
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 12px;">
@@ -81,7 +68,6 @@ public final class EmailLayout {
         return this;
     }
 
-    /** Quadro de dados (rótulo em mono à esquerda, valor em negrito à direita). */
     public EmailLayout details(String... labelValuePairs) {
         StringBuilder rows = new StringBuilder();
         StringBuilder plain = new StringBuilder();
@@ -103,7 +89,6 @@ public final class EmailLayout {
         return this;
     }
 
-    /** Destaque em âmbar, como os avisos do front. */
     public EmailLayout callout(String value) {
         html.add("""
                 <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px;">
@@ -113,7 +98,6 @@ public final class EmailLayout {
         return this;
     }
 
-    /** Observação em letra menor, no fim do cartão. */
     public EmailLayout note(String value) {
         html.add("<p style=\"margin:8px 0 0;font-family:" + SANS + ";font-size:14px;line-height:1.5;color:" + MUTED + ";\">"
                 + esc(value) + "</p>");

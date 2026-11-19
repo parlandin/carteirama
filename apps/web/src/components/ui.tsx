@@ -27,8 +27,6 @@ import { groupColor, textOn } from "../lib/colors";
 import { cx } from "../lib/cx";
 import { initials, monthLabel } from "../lib/format";
 
-/* ------------------------------------------------------------------ Botões */
-
 type Variant = "primary" | "secondary" | "blue" | "dark" | "danger" | "ghost" | "amber";
 type Size = "sm" | "md" | "lg";
 
@@ -134,8 +132,6 @@ export function LinkButton({
   );
 }
 
-/* ------------------------------------------------------------------ Layout */
-
 export function Card({
   children,
   className,
@@ -209,7 +205,6 @@ export function BackLink({ to, label, className }: { to: string; label: string; 
   );
 }
 
-/** Rodapé escuro com o total, usado no fim das tabelas. */
 export function TotalBar({ label, sub, value, suffix }: { label: ReactNode; sub?: ReactNode; value: ReactNode; suffix?: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-b-[14px] border-t-2 border-navy bg-navy px-5 py-5 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-6">
@@ -225,7 +220,6 @@ export function TotalBar({ label, sub, value, suffix }: { label: ReactNode; sub?
   );
 }
 
-/** Cabeçalho de colunas das tabelas (só aparece em telas largas). */
 export function TableHead({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cx("hidden border-b-2 border-navy bg-paper-2 px-6 py-3 font-mono text-[11px] tracking-[0.12em] text-muted uppercase md:grid rounded-t-[14px]", className)}>
@@ -233,8 +227,6 @@ export function TableHead({ children, className }: { children: ReactNode; classN
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ Status */
 
 type PillTone = "green" | "amber" | "blue" | "gray" | "red" | "navy";
 
@@ -285,8 +277,6 @@ export function StatusPill({ kind, status, className }: { kind: "charge" | "invo
   );
 }
 
-/* ------------------------------------------------------------------ Grupos */
-
 export function GroupAvatar({ name, color, size = "md" }: { name: string; color: string | null; size?: "sm" | "md" | "lg" }) {
   const bg = groupColor(color);
   const dims = size === "lg" ? "size-16 text-2xl rounded-2xl shadow-hard-sm" : size === "sm" ? "size-9 text-xs rounded-lg" : "size-[52px] text-base rounded-xl";
@@ -310,8 +300,6 @@ export function GroupChip({ name, color }: { name: string; color: string | null 
   );
 }
 
-/* ------------------------------------------------------------------ Mês */
-
 export function MonthPicker({ month, onChange, className }: { month: string; onChange: (delta: number) => void; className?: string }) {
   return (
     <div className={cx("inline-flex h-11 items-center justify-between gap-2 rounded-[10px] border-2 border-navy bg-white px-1.5", className)}>
@@ -327,8 +315,6 @@ export function MonthPicker({ month, onChange, className }: { month: string; onC
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ Filtros */
 
 export function FilterChips<T extends string>({
   options,
@@ -363,8 +349,6 @@ export function FilterChips<T extends string>({
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ Form */
 
 const inputBase =
   "w-full rounded-[10px] border-2 border-navy bg-white px-4 text-[15px] text-ink placeholder:text-[#8792a8] transition focus:outline-none focus:ring-3 focus:ring-blue/30 disabled:bg-paper disabled:text-muted";
@@ -441,7 +425,6 @@ export function Checkbox({ label, checked, onChange, className, children }: { la
   );
 }
 
-/** Opção grande (radio/checkbox) com título e descrição, usada em exportar e formulários. */
 export function OptionCard({
   type,
   checked,
@@ -522,8 +505,6 @@ export function FormError({ message }: { message?: string | null }) {
   );
 }
 
-/* ------------------------------------------------------------------ Estados */
-
 export function Spinner({ className }: { className?: string }) {
   return <LoaderCircle className={cx("size-6 animate-spin text-blue", className)} aria-label="Carregando" />;
 }
@@ -563,8 +544,6 @@ export function EmptyState({ icon: Icon, title, description, action }: { icon: L
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ Modal */
 
 export function Modal({
   open,
@@ -617,8 +596,6 @@ export function Modal({
     document.body,
   );
 }
-
-/* ------------------------------------------------------------------ Marca */
 
 export function Logo({ tagline = "Suíte Parlandim TI", dark = true, admin }: { tagline?: string; dark?: boolean; admin?: boolean }) {
   return (

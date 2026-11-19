@@ -6,17 +6,12 @@ import { useToast } from "../lib/toast";
 import { useForm } from "../lib/useForm";
 import { Button, Field, FormError, Input, Modal, Select, Textarea } from "./ui";
 
-/** Vencimento sugerido: hoje no mês atual; dia 1 em outro mês. */
 function defaultDueDate(month?: string): string {
   return !month || month === currentMonth() ? today() : `${month}-01`;
 }
 
 const empty = (month?: string) => ({ client_id: "", description: "", amount: "", due_date: defaultDueDate(month), note: "" });
 
-/**
- * Cria uma cobrança avulsa: vale só para o mês do vencimento e não altera a mensalidade do cliente.
- * Com `client`, o cliente fica fixo; sem ele, aparece a lista de clientes ativos.
- */
 export function OneOffChargeModal({ open, onClose, client, month }: { open: boolean; onClose: () => void; client?: { id: string; name: string }; month?: string }) {
   const toast = useToast();
   const invalidate = useInvalidateData();
@@ -29,7 +24,6 @@ export function OneOffChargeModal({ open, onClose, client, month }: { open: bool
       setValues(empty(month));
       reset();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, month]);
 
   async function save() {

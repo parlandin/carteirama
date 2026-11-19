@@ -8,13 +8,10 @@ import { useToast } from "../lib/toast";
 import type { ClientExtra, ExtraKind } from "../lib/types";
 import { Button, Card, Field, FormError, Input, Modal, Select } from "./ui";
 
-/* ------------------------------------------------------------------ Rascunho e validação */
-
 export interface ExtraDraft {
   kind: ExtraKind;
   description: string;
   amount: string;
-  /** recurring: todo mês, a partir do atual; month: só no mês escolhido. */
   when: "recurring" | "month";
   month: string;
 }
@@ -23,7 +20,6 @@ export const emptyExtra = (kind: ExtraKind = "bonus"): ExtraDraft => ({ kind, de
 
 export type ExtraErrors = Partial<Record<"description" | "amount_cents" | "month", string>>;
 
-/** Valida o rascunho; devolve os erros ou o corpo pronto para POST /clients/{id}/extras. */
 export function toExtraBody(d: ExtraDraft): { errors: ExtraErrors } | { body: Record<string, unknown> } {
   const errors: ExtraErrors = {};
   const amount = parseMoney(d.amount);
@@ -41,7 +37,6 @@ const KINDS: { kind: ExtraKind; title: string; hint: string; icon: typeof Plus }
   { kind: "cost", title: "Custo", hint: "Sai do seu ganho; o cliente paga o mesmo.", icon: Minus },
 ];
 
-/** Campos de um bônus ou custo. Usado no modal e no cadastro do cliente. */
 export function ExtraFields({ id, value, onChange, errors = {} }: { id: string; value: ExtraDraft; onChange: (v: ExtraDraft) => void; errors?: ExtraErrors }) {
   const set = <K extends keyof ExtraDraft>(k: K, v: ExtraDraft[K]) => onChange({ ...value, [k]: v });
   const now = currentMonth();
@@ -101,8 +96,6 @@ export function ExtraFields({ id, value, onChange, errors = {} }: { id: string; 
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ Modal de inclusão */
 
 export function AddExtraModal({ clientId, open, onClose }: { clientId: string; open: boolean; onClose: () => void }) {
   const toast = useToast();
@@ -169,15 +162,12 @@ export function AddExtraModal({ clientId, open, onClose }: { clientId: string; o
   );
 }
 
-/* ------------------------------------------------------------------ Card no detalhe do cliente */
-
 function whenLabel(e: ClientExtra): string {
   const month = e.start_month.slice(0, 7);
   if (!e.recurring) return `Só em ${monthLabel(month).toLowerCase()}`;
   return month > currentMonth() ? `Todo mês, a partir de ${monthLabel(month).toLowerCase()}` : "Todo mês";
 }
 
-/** Soma dos recorrentes que já valem neste mês. */
 export function recurringTotals(extras: ClientExtra[]) {
   const now = currentMonth();
   const live = extras.filter((e) => e.recurring && e.start_month.slice(0, 7) <= now);
@@ -192,7 +182,6 @@ export function ExtrasCard({ clientId, extras, canEdit }: { clientId: string; ex
   const [removing, setRemoving] = useState<ClientExtra | null>(null);
   const [busy, setBusy] = useState(false);
   const now = currentMonth();
-  // Os de um mês que já passou ficam no histórico das cobranças; aqui, só o que vale agora ou adiante.
   const shown = extras.filter((e) => e.recurring || e.start_month.slice(0, 7) >= now);
   const past = extras.length - shown.length;
 

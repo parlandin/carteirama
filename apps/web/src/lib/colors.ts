@@ -8,7 +8,6 @@ export const GROUP_COLORS = [
 
 export const DEFAULT_GROUP_COLOR = GROUP_COLORS[0].value;
 
-/** Cor de texto legível sobre a cor do grupo. */
 export function textOn(hex: string | null | undefined): string {
   const h = (hex ?? DEFAULT_GROUP_COLOR).replace("#", "");
   if (h.length !== 6) return "#ffffff";

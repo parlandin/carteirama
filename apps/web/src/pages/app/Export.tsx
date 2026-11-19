@@ -27,7 +27,6 @@ export default function Export() {
       return next;
     });
 
-  // O total dos grupos e as cobranças dependem do mês escolhido.
   const usesMonth = types.has("charges") || types.has("groups");
 
   async function run() {
@@ -35,7 +34,6 @@ export default function Export() {
     setError(null);
     try {
       const selected = (["clients", "groups", "charges"] as Type[]).filter((t) => types.has(t));
-      // Uma requisição só: a API junta os tipos marcados numa única tabela.
       await download("/export", { type: selected, format, month: usesMonth ? month : undefined }, `carteirama.${format}`);
       toast.show("Planilha baixada.");
     } catch (e) {

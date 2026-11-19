@@ -22,11 +22,6 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Bônus e custos do cliente. Eles não viram cobranças próprias: entram na mensalidade do cliente
- * nos meses em que valem (ver as fórmulas em {@link com.parlandim.carteirama.model.Charge}).
- * Regra: um bônus nunca altera uma mensalidade que já foi paga.
- */
 @Service
 @RequiredArgsConstructor
 public class ClientExtraService {
@@ -59,7 +54,7 @@ public class ClientExtraService {
         if (req.month() == null || req.month().isBlank()) {
             YearMonth start = clock.currentMonth();
             if (bonus && paid(clientId, start)) {
-                start = start.plusMonths(1); // a mensalidade deste mês já foi paga
+                start = start.plusMonths(1);
             }
             extra.setRecurring(true);
             extra.setStartMonth(start.atDay(1));
@@ -75,10 +70,6 @@ public class ClientExtraService {
         return ExtraResponse.of(extras.saveAndFlush(extra));
     }
 
-    /**
-     * Um extra de um mês é apagado. Um recorrente deixa de valer a partir deste mês; os meses
-     * anteriores continuam com ele. Se só valia deste mês em diante, é apagado.
-     */
     @Transactional
     public void remove(UUID accountId, UUID clientId, UUID id) {
         ClientExtra extra = extras.findByIdAndAccountIdAndClientId(id, accountId, clientId)
@@ -93,7 +84,7 @@ public class ClientExtraService {
             return;
         }
         if (extra.getEndMonth() != null) {
-            return; // já encerrado
+            return;
         }
         YearMonth current = clock.currentMonth();
         YearMonth last = bonus && paid(clientId, current) ? current : current.minusMonths(1);

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ApiError } from "./api";
 
-/** Estado simples de formulário com erros por campo vindos da API (snake_case). */
 export function useForm<T extends Record<string, unknown>>(initial: T) {
   const [values, setValues] = useState<T>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -17,7 +16,6 @@ export function useForm<T extends Record<string, unknown>>(initial: T) {
     });
   };
 
-  /** Mostra o erro da API: campos ganham mensagem própria, o resto vai para o topo. */
   const fail = (e: unknown, fieldMap: Record<string, string> = {}) => {
     if (e instanceof ApiError) {
       const fe = e.fieldErrors();

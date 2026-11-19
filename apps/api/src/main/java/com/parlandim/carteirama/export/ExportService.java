@@ -47,11 +47,6 @@ public class ExportService {
     private final GroupRepository groups;
     private final BusinessClock clock;
 
-    /**
-     * Exporta os tipos pedidos numa única tabela. Com um tipo só, a planilha é a daquele tipo; com vários,
-     * as colunas de cada tipo são juntadas numa linha por cliente (ou por cobrança, sem clientes), e os grupos
-     * sem nenhuma linha entram também, para que nada selecionado fique de fora.
-     */
     @Transactional(readOnly = true)
     public File export(UUID accountId, Collection<Type> requested, Format format, YearMonth month) {
         Set<Type> types = EnumSet.copyOf(requested);
@@ -126,7 +121,6 @@ public class ExportService {
         Set<UUID> groupsWithLines = new HashSet<>();
 
         if (withClients) {
-            // Um cliente pode ter a mensalidade e cobranças avulsas no mesmo mês: uma linha para cada.
             Map<UUID, List<Charge>> chargesByClient = new HashMap<>();
             for (Charge c : monthCharges) {
                 chargesByClient.computeIfAbsent(c.getClient().getId(), k -> new ArrayList<>()).add(c);

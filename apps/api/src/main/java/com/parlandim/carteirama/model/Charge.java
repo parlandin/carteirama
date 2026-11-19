@@ -48,7 +48,6 @@ public class Charge extends BaseEntity {
     @Column(nullable = false, columnDefinition = "charge_kind")
     private ChargeKind kind = ChargeKind.recurring;
 
-    /** Obrigatória nas avulsas ("Instalação", "Visita técnica"); nula nas recorrentes. */
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -61,10 +60,6 @@ public class Charge extends BaseEntity {
 
     private String note;
 
-    /*
-     * Bônus e custos do cliente que valem no mês desta cobrança (só na mensalidade; avulsas não têm).
-     * Calculados pelo banco a cada leitura: não são gravados aqui.
-     */
     @Setter(lombok.AccessLevel.NONE)
     @Formula("(select coalesce(sum(e.amount_cents), 0) from client_extras e where e.client_id = client_id and e.kind = 'bonus' and kind = 'recurring' and e.start_month <= reference_month and (e.end_month is null or e.end_month >= reference_month))")
     private long bonusCents;
@@ -73,12 +68,10 @@ public class Charge extends BaseEntity {
     @Formula("(select coalesce(sum(e.amount_cents), 0) from client_extras e where e.client_id = client_id and e.kind = 'cost' and kind = 'recurring' and e.start_month <= reference_month and (e.end_month is null or e.end_month >= reference_month))")
     private long costCents;
 
-    /** Valor cobrado do cliente: serviço + bônus. */
     public long getTotalCents() {
         return amountCents + bonusCents;
     }
 
-    /** O que sobra depois dos custos. */
     public long getNetCents() {
         return getTotalCents() - costCents;
     }

@@ -13,7 +13,6 @@ public interface ClientExtraRepository extends JpaRepository<ClientExtra, UUID> 
 
     Optional<ClientExtra> findByIdAndAccountIdAndClientId(UUID id, UUID accountId, UUID clientId);
 
-    /** Recorrentes em vigor e os de um mês a partir de {@code since}. */
     @Query("""
             select e from ClientExtra e
             where e.account.id = :accountId and e.client.id = :clientId

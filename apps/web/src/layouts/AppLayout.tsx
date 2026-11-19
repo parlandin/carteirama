@@ -20,7 +20,6 @@ import { money } from "../lib/format";
 import { useInvoices } from "../lib/queries";
 import type { Me } from "../lib/types";
 
-/** Garante sessão. Sem login, manda para /entrar guardando o destino. */
 function useRequireMe() {
   const { data: me, isLoading, isError } = useMe();
   const location = useLocation();
@@ -158,7 +157,6 @@ export function AdminLayout() {
   );
 }
 
-/** Páginas de login/cadastro: quem já está logado vai direto para o app. */
 export function GuestOnly() {
   const { data: me, isLoading } = useMe();
   const location = useLocation();

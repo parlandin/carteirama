@@ -6,7 +6,6 @@ import { useToast } from "../lib/toast";
 import type { Charge } from "../lib/types";
 import { Button, Field, FormError, Input, Modal } from "./ui";
 
-/** Confirma o pagamento de uma cobrança, com a data em que o dinheiro entrou. */
 export function PayChargeModal({ charge, onClose }: { charge: Charge | null; onClose: () => void }) {
   const toast = useToast();
   const invalidate = useInvalidateData();

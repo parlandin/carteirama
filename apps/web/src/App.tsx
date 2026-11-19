@@ -11,7 +11,6 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 20_000,
       refetchOnWindowFocus: true,
-      // Não insiste em erros do cliente (404, 403...): só em falhas de rede ou do servidor.
       retry: (count, error) => count < 2 && (!(error instanceof ApiError) || error.status === 0 || error.status >= 500),
     },
   },

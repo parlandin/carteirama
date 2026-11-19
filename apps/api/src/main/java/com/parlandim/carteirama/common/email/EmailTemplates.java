@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-/** Os e-mails que a Carteirama envia, todos no mesmo layout (ver {@link EmailLayout}). */
 @Component
 @RequiredArgsConstructor
 public class EmailTemplates {

@@ -12,7 +12,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Component
 public class CapturingEmailSender implements EmailSender {
 
-    /** {@code body}: a versão em texto; {@code html}: a versão em HTML. */
     public record Email(String to, String subject, String body, String html) {
     }
 

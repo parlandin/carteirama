@@ -17,7 +17,6 @@ import Login from "./pages/auth/Login";
 import { ForgotPassword, ResetPassword } from "./pages/auth/PasswordPages";
 import Register from "./pages/auth/Register";
 
-/** Carrega a página sob demanda (o painel admin só é usado por poucos). */
 const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({ Component: (await load()).default });
 
 const router = createBrowserRouter([
@@ -32,7 +31,6 @@ const router = createBrowserRouter([
       { path: "/esqueci-a-senha", element: <ForgotPassword /> },
     ],
   },
-  // O link do e-mail de redefinição aponta para este caminho (AuthService na API).
   { path: "/reset-password", element: <ResetPassword /> },
   {
     path: "/app",

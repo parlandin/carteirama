@@ -59,7 +59,6 @@ class ClientExtraTest extends IntegrationTest {
         assertThat(api.get("/api/v1/groups?month=" + MONTH).json().path("data").get(0)
                 .path("month_total_cents").asLong()).isEqualTo(25500);
 
-        // No mês seguinte: o custo recorrente continua, os bônus de um mês não, e entra o daquele mês.
         api.post("/api/v1/charges/generate", Map.of("month", NEXT));
         var proximo = charge(api, NEXT);
         assertThat(proximo.path("bonus_cents").asLong()).isEqualTo(700);
@@ -72,7 +71,6 @@ class ClientExtraTest extends IntegrationTest {
         assertThat(detalhe.path("extras").get(0).path("start_month").asString()).isEqualTo(MONTH + "-01");
         assertThat(detalhe.path("charges").get(0).path("total_cents").asLong()).isEqualTo(20700);
 
-        // Cobrança avulsa não recebe bônus nem custos.
         var avulsa = api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "one_off", "description", "Visita",
                 "amount_cents", 5000, "due_date", CURRENT.atDay(15).toString())).json();
         assertThat(avulsa.path("bonus_cents").asLong()).isZero();
@@ -119,7 +117,6 @@ class ClientExtraTest extends IntegrationTest {
         assertThat(api.delete("/api/v1/clients/" + ana + "/extras/" + bonusDoMes).code())
                 .isEqualTo("charge_already_paid");
 
-        // Bônus recorrente começa no mês seguinte; custo pode entrar no mês pago.
         var recorrente = api.post("/api/v1/clients/" + ana + "/extras", Api.body("kind", "bonus",
                 "description", "Suporte", "amount_cents", 1000)).json();
         assertThat(recorrente.path("start_month").asString()).isEqualTo(NEXT + "-01");

@@ -35,7 +35,6 @@ function ClientForm({ initial }: { initial?: Client }) {
   const { data: groups, isLoading: loadingGroups } = useGroups(currentMonth());
   const editing = !!initial;
   const [busy, setBusy] = useState(false);
-  // Bônus e custos do cadastro (só em cliente novo; depois, ficam no detalhe do cliente).
   const [extras, setExtras] = useState<ExtraDraft[]>([]);
   const [extraErrors, setExtraErrors] = useState<ExtraErrors[]>([]);
 

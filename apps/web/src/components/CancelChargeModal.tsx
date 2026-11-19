@@ -6,7 +6,6 @@ import { useToast } from "../lib/toast";
 import type { Charge } from "../lib/types";
 import { Button, Modal } from "./ui";
 
-/** Confirma o cancelamento de uma cobrança pendente (usado nas avulsas criadas por engano). */
 export function CancelChargeModal({ charge, onClose }: { charge: Charge | null; onClose: () => void }) {
   const toast = useToast();
   const invalidate = useInvalidateData();

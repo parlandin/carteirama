@@ -17,7 +17,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 
-/** Bônus ou custo de um cliente, recorrente ou só de um mês (ver V6__create_client_extras.sql). */
 @Getter
 @Setter
 @NoArgsConstructor

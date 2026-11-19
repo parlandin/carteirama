@@ -166,7 +166,6 @@ class ChargeTest extends IntegrationTest {
         assertThat(avulsa.json().path("reference_month").asString()).isEqualTo("2026-12-01");
         String id = avulsa.json().path("id").asString();
 
-        // Mais de uma avulsa no mesmo mês é permitido; a mensalidade continua única.
         assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "one_off",
                 "description", "Visita técnica", "amount_cents", 8000, "due_date", "2026-12-20")).status()).isEqualTo(201);
         assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "amount_cents", 5000,

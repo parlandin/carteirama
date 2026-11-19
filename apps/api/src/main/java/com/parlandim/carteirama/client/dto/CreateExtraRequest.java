@@ -8,9 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/**
- * @param month "YYYY-MM": vale só nesse mês. Sem valor, é recorrente (todo mês, a partir do atual).
- */
 public record CreateExtraRequest(
         @NotNull ExtraKind kind,
         @NotBlank @Size(max = 120) String description,

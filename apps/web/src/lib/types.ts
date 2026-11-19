@@ -91,16 +91,11 @@ export interface Charge {
   display_status: ChargeDisplayStatus;
   paid_at: string | null;
   note: string | null;
-  /** recurring: a mensalidade do mês; one_off: cobrança avulsa, com descrição. */
   kind: ChargeKind;
   description: string | null;
-  /** Bônus do cliente que valem neste mês (só na mensalidade). */
   bonus_cents: number;
-  /** Custos do cliente neste mês: não mudam o valor cobrado. */
   cost_cents: number;
-  /** Valor cobrado: serviço (amount_cents) + bônus. */
   total_cents: number;
-  /** total_cents − cost_cents: o que sobra para você. */
   net_cents: number;
 }
 
@@ -112,7 +107,6 @@ export interface ClientExtra {
   description: string;
   amount_cents: number;
   recurring: boolean;
-  /** Primeiro mês em que vale (o único, quando não é recorrente). */
   start_month: string;
   end_month: string | null;
 }
@@ -166,8 +160,6 @@ export interface PaymentLink {
   boleto_url: string | null;
   card_url: string | null;
 }
-
-/* Admin */
 
 export type AdminAccountFilter = AccountStatus | "late";
 

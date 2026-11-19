@@ -130,7 +130,6 @@ export function Shell({
     <div className="flex min-h-dvh flex-col">
       {banner}
       <div className="flex flex-1">
-        {/* Sidebar fixa (desktop) */}
         <aside className="sticky top-0 hidden h-dvh w-[250px] shrink-0 flex-col overflow-y-auto bg-navy px-4 pt-6 pb-5 lg:flex">
           <Link to={home} className="mb-7 px-2">
             <Logo admin={admin} />
@@ -139,7 +138,6 @@ export function Shell({
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Barra superior (mobile/tablet) */}
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-navy px-4 lg:hidden">
             <Link to={home}>
               <Logo admin={admin} />
@@ -159,7 +157,6 @@ export function Shell({
         </div>
       </div>
 
-      {/* Menu lateral (mobile) */}
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-navy/60" onClick={() => setOpen(false)} />

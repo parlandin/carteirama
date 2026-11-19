@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Com RESEND_API_KEY, envia pela Resend; sem ela, os e-mails só vão para o log. */
 @Slf4j
 @Configuration
 public class EmailConfig {

@@ -18,7 +18,6 @@ export function useMe() {
   return useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000, retry: 1 });
 }
 
-/** Se qualquer chamada voltar 401, a sessão acabou: limpa o cache e o usuário. */
 export function useSessionWatcher() {
   const qc = useQueryClient();
   useEffect(
@@ -42,7 +41,6 @@ export function useLogout() {
   };
 }
 
-/** Conta suspensa ou cancelada: a API recusa qualquer escrita. */
 export function isReadOnly(me: Me | null | undefined): boolean {
   const s = me?.account?.status;
   return s === "suspended" || s === "cancelled";

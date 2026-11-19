@@ -228,7 +228,6 @@ export default function Landing() {
     <div className="min-h-dvh bg-paper">
       <Header />
 
-      {/* Hero */}
       <section className="px-4 pt-10 pb-16 sm:px-8 sm:pt-16 sm:pb-24">
         <div className="mx-auto grid max-w-[1240px] items-center gap-12 lg:grid-cols-2">
           <div>
@@ -291,7 +290,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Recursos */}
       <Section id="recursos">
         <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <Eyebrow tone="muted">[Em foco]</Eyebrow>
@@ -386,7 +384,6 @@ export default function Landing() {
         </div>
       </Section>
 
-      {/* Por dentro */}
       <Section id="telas" className="bg-navy text-white">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
@@ -485,7 +482,6 @@ export default function Landing() {
         </div>
       </Section>
 
-      {/* Como usar */}
       <Section id="como-usar">
         <Eyebrow tone="muted" className="mb-3">
           [Como usar]
@@ -527,7 +523,6 @@ export default function Landing() {
         </div>
       </Section>
 
-      {/* Planos */}
       <Section id="planos" className="pt-0 sm:pt-0">
         <Eyebrow tone="muted" className="mb-3">
           [Planos]
@@ -619,7 +614,6 @@ export default function Landing() {
         </div>
       </Section>
 
-      {/* Suíte */}
       <Section className="pt-0 sm:pt-0">
         <div className="grid gap-10 rounded-2xl border-2 border-navy bg-white p-6 shadow-hard sm:p-10 lg:grid-cols-2 lg:items-center">
           <div>
@@ -664,7 +658,6 @@ export default function Landing() {
         </div>
       </Section>
 
-      {/* CTA */}
       <section className="bg-blue px-4 py-16 text-center text-white sm:py-24">
         <h2 className="mx-auto max-w-2xl text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
           Pronto para ver o total do mês?

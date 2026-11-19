@@ -14,21 +14,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Envia pela API da Resend (POST /emails).
- * <p>
- * Cada e-mail leva uma Idempotency-Key, repetida nas novas tentativas: se a primeira chegou e só a
- * resposta se perdeu, a Resend não envia de novo. Tenta outra vez em erro de rede, 5xx e 429
- * (respeitando o retry-after); outros 4xx são erro nosso e não adianta repetir.
- * Falhas são registradas no log e não interrompem quem chamou (login, rotinas diárias).
- */
 @Slf4j
 public class ResendEmailSender implements EmailSender {
 
     static final int MAX_ATTEMPTS = 3;
     private static final Duration MAX_WAIT = Duration.ofSeconds(5);
 
-    /** Espera entre tentativas; trocada nos testes. */
     public interface Sleeper {
         void sleep(Duration duration) throws InterruptedException;
     }
@@ -105,7 +96,7 @@ public class ResendEmailSender implements EmailSender {
     }
 
     private static Duration backoff(int attempt) {
-        return Duration.ofMillis(500L << (attempt - 1)); // 0,5 s, 1 s
+        return Duration.ofMillis(500L << (attempt - 1));
     }
 
     private static java.util.Optional<Duration> retryAfter(RestClientResponseException e) {

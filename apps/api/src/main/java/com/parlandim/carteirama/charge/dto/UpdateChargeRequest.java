@@ -24,7 +24,6 @@ public class UpdateChargeRequest {
     @JsonSetter(nulls = Nulls.FAIL)
     private LocalDate dueDate;
     private Optional<@Size(max = 500) String> note;
-    /** Só para cobranças avulsas. */
     @JsonSetter(nulls = Nulls.FAIL)
     @Size(max = 120)
     private String description;

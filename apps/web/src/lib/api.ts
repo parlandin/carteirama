@@ -19,7 +19,6 @@ export class ApiError extends Error {
     this.details = details;
   }
 
-  /** Erros de validação indexados pelo nome do campo (snake_case, como a API manda). */
   fieldErrors(): Record<string, string> {
     const out: Record<string, string> = {};
     for (const d of this.details) {
@@ -32,7 +31,6 @@ export class ApiError extends Error {
 type Listener = () => void;
 const unauthorizedListeners = new Set<Listener>();
 
-/** Chamado quando a API responde 401 numa rota autenticada (sessão expirou). */
 export function onUnauthorized(fn: Listener) {
   unauthorizedListeners.add(fn);
   return () => {
@@ -43,7 +41,6 @@ export function onUnauthorized(fn: Listener) {
 type Scalar = string | number | boolean | null | undefined;
 type Query = Record<string, Scalar | Scalar[]>;
 
-/** Listas viram parâmetros repetidos (?type=a&type=b), que é o que o Spring entende. */
 function serialize(params: Query): string {
   const out = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -61,7 +58,6 @@ const http = axios.create({
   paramsSerializer: { serialize },
 });
 
-/** Lê o corpo de erro da API ({ error: { code, message, details } }), inclusive quando veio como Blob. */
 async function toApiError(e: unknown): Promise<ApiError> {
   if (!(e instanceof AxiosError)) return new ApiError(0, "internal_error", "Erro inesperado. Tente novamente.");
   const res = e.response;
@@ -98,7 +94,6 @@ export const api = {
   delete: <T = void>(path: string) => http.delete<T>(path).then((r) => r.data),
 };
 
-/** Busca todas as páginas de uma listagem paginada (as contas têm poucos registros). */
 export async function getAll<T>(path: string, query: Query = {}): Promise<T[]> {
   const limit = 100;
   const out: T[] = [];
@@ -110,7 +105,6 @@ export async function getAll<T>(path: string, query: Query = {}): Promise<T[]> {
   return out;
 }
 
-/** Baixa um arquivo da API e dispara o download no navegador. */
 export async function download(path: string, params: Query, fallbackName: string) {
   const res = await http.get<Blob>(path, { params, responseType: "blob" });
   const disposition = String(res.headers["content-disposition"] ?? "");

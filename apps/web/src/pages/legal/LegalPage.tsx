@@ -9,7 +9,6 @@ export interface LegalSection {
   body: ReactNode;
 }
 
-/** Layout das páginas legais: cabeçalho, índice (desktop) e seções numeradas. */
 export function LegalPage({ eyebrow, title, updatedAt, intro, sections, other }: {
   eyebrow: string;
   title: string;

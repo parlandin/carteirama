@@ -106,7 +106,7 @@ public class ChargeService {
         charge.setKind(req.kind());
         charge.setDescription(oneOff ? req.description() : null);
         charges.saveAndFlush(charge);
-        entityManager.refresh(charge); // carrega os bônus e custos do mês
+        entityManager.refresh(charge);
         return ChargeResponse.of(charge, clock.today());
     }
 

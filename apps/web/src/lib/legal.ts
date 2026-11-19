@@ -1,7 +1,3 @@
-/**
- * Dados usados nos termos de uso e na política de privacidade.
- * Preencha o e-mail de contato antes de publicar; sem ele, os textos apontam para o suporte.
- */
 export const LEGAL = {
   company: "Parlandim TI",
   contactEmail: "contato@parlandim.dev.br" as string,
