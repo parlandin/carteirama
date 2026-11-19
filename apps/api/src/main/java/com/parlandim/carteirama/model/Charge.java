@@ -1,5 +1,6 @@
 package com.parlandim.carteirama.model;
 
+import com.parlandim.carteirama.model.enums.ChargeKind;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,6 +41,14 @@ public class Charge extends BaseEntity {
 
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "charge_kind")
+    private ChargeKind kind = ChargeKind.recurring;
+
+    /** Obrigatória nas avulsas ("Instalação", "Visita técnica"); nula nas recorrentes. */
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

@@ -4,6 +4,7 @@ import com.parlandim.carteirama.common.time.BusinessClock;
 import com.parlandim.carteirama.group.dto.GroupListItem;
 import com.parlandim.carteirama.model.Charge;
 import com.parlandim.carteirama.model.Client;
+import com.parlandim.carteirama.model.enums.ChargeKind;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
 import com.parlandim.carteirama.model.enums.ClientStatus;
 import com.parlandim.carteirama.repository.ChargeRepository;
@@ -116,31 +117,36 @@ public class ExportService {
                     "Descrição do grupo"));
         }
         if (withCharges) {
-            headers.addAll(List.of("Mês", "Vencimento", "Valor cobrado (R$)", "Situação da cobrança", "Pago em",
-                    "Nota da cobrança"));
+            headers.addAll(List.of("Mês", "Cobrança", "Vencimento", "Valor cobrado (R$)", "Situação da cobrança",
+                    "Pago em", "Nota da cobrança"));
         }
 
         List<Line> lines = new ArrayList<>();
         Set<UUID> groupsWithLines = new HashSet<>();
 
         if (withClients) {
-            Map<UUID, Charge> chargeByClient = new HashMap<>();
+            // Um cliente pode ter a mensalidade e cobranças avulsas no mesmo mês: uma linha para cada.
+            Map<UUID, List<Charge>> chargesByClient = new HashMap<>();
             for (Charge c : monthCharges) {
-                chargeByClient.merge(c.getClient().getId(), c,
-                        (a, b) -> a.getStatus() == ChargeStatus.cancelled ? b : a);
+                chargesByClient.computeIfAbsent(c.getClient().getId(), k -> new ArrayList<>()).add(c);
             }
             for (Client c : allClients(accountId)) {
-                List<Object> row = new ArrayList<>(Arrays.asList(c.getName(), c.getDocument(), c.getEmail(),
-                        c.getPhone(), new Sheet.Money(c.getAmountCents()), (int) c.getDueDay(), label(c.getStatus()),
-                        c.getNotes(), c.getGroup().getName()));
-                if (withGroups) {
-                    row.addAll(groupCells(groupStats.get(c.getGroup().getId())));
-                }
-                if (withCharges) {
-                    row.addAll(chargeCells(chargeByClient.get(c.getId()), month, today));
+                List<Charge> clientCharges = chargesByClient.getOrDefault(c.getId(), List.of());
+                List<Charge> perRow = withCharges && !clientCharges.isEmpty()
+                        ? clientCharges : Collections.singletonList(null);
+                for (Charge charge : perRow) {
+                    List<Object> row = new ArrayList<>(Arrays.asList(c.getName(), c.getDocument(), c.getEmail(),
+                            c.getPhone(), new Sheet.Money(c.getAmountCents()), (int) c.getDueDay(),
+                            label(c.getStatus()), c.getNotes(), c.getGroup().getName()));
+                    if (withGroups) {
+                        row.addAll(groupCells(groupStats.get(c.getGroup().getId())));
+                    }
+                    if (withCharges) {
+                        row.addAll(chargeCells(charge, month, today));
+                    }
+                    lines.add(new Line(c.getGroup().getName(), c.getName(), row));
                 }
                 groupsWithLines.add(c.getGroup().getId());
-                lines.add(new Line(c.getGroup().getName(), c.getName(), row));
             }
         } else {
             for (Charge c : monthCharges) {
@@ -168,7 +174,7 @@ public class ExportService {
                 row.add(g.name());
                 row.addAll(groupCells(g));
                 if (withCharges) {
-                    row.addAll(Collections.nCopies(6, null));
+                    row.addAll(Collections.nCopies(7, null));
                 }
                 lines.add(new Line(g.name(), "", row));
             }
@@ -188,10 +194,14 @@ public class ExportService {
 
     private static List<Object> chargeCells(Charge c, YearMonth month, LocalDate today) {
         if (c == null) {
-            return Arrays.asList(month.toString(), null, null, null, null, null);
+            return Arrays.asList(month.toString(), null, null, null, null, null, null);
         }
-        return Arrays.asList(month.toString(), c.getDueDate(), new Sheet.Money(c.getAmountCents()),
+        return Arrays.asList(month.toString(), chargeName(c), c.getDueDate(), new Sheet.Money(c.getAmountCents()),
                 chargeLabel(c, today), c.getPaidAt(), c.getNote());
+    }
+
+    private static String chargeName(Charge c) {
+        return c.getKind() == ChargeKind.one_off ? c.getDescription() : "Mensalidade";
     }
 
     private static String chargeLabel(Charge c, LocalDate today) {
@@ -225,10 +235,10 @@ public class ExportService {
         List<List<Object>> rows = new ArrayList<>();
         for (Charge c : monthCharges(accountId, month)) {
             rows.add(Arrays.asList(c.getClient().getName(), c.getClient().getGroup().getName(), month.toString(),
-                    c.getDueDate(), new Sheet.Money(c.getAmountCents()), chargeLabel(c, today),
+                    chargeName(c), c.getDueDate(), new Sheet.Money(c.getAmountCents()), chargeLabel(c, today),
                     c.getPaidAt(), c.getNote()));
         }
-        return new Sheet("Cobranças " + month, List.of("Cliente", "Grupo", "Mês", "Vencimento", "Valor (R$)",
+        return new Sheet("Cobranças " + month, List.of("Cliente", "Grupo", "Mês", "Cobrança", "Vencimento", "Valor (R$)",
                 "Status", "Pago em", "Nota"), rows);
     }
 

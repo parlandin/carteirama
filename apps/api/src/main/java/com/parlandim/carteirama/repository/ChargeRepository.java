@@ -1,6 +1,7 @@
 package com.parlandim.carteirama.repository;
 
 import com.parlandim.carteirama.model.Charge;
+import com.parlandim.carteirama.model.enums.ChargeKind;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +29,7 @@ public interface ChargeRepository extends JpaRepository<Charge, UUID>, JpaSpecif
     @EntityGraph(attributePaths = {"client", "client.group"})
     List<Charge> findAllByAccountIdAndClientIdOrderByReferenceMonthDesc(UUID accountId, UUID clientId);
 
-    boolean existsByClientIdAndReferenceMonth(UUID clientId, LocalDate referenceMonth);
+    boolean existsByClientIdAndReferenceMonthAndKind(UUID clientId, LocalDate referenceMonth, ChargeKind kind);
 
     @Query("""
             select c.status, c.dueDate, c.amountCents from Charge c
@@ -43,7 +44,7 @@ public interface ChargeRepository extends JpaRepository<Charge, UUID>, JpaSpecif
                    CAST(:month AS date) + (c.due_day - 1), 'pending'
             FROM clients c
             WHERE c.account_id = :accountId AND c.status = 'active'
-            ON CONFLICT (client_id, reference_month) DO NOTHING
+            ON CONFLICT (client_id, reference_month) WHERE kind = 'recurring' DO NOTHING
             """, nativeQuery = true)
     int generateMonth(UUID accountId, LocalDate month);
 

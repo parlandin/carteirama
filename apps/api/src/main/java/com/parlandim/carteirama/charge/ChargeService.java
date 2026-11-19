@@ -10,6 +10,7 @@ import com.parlandim.carteirama.common.time.BusinessClock;
 import com.parlandim.carteirama.common.web.PageResponse;
 import com.parlandim.carteirama.model.Charge;
 import com.parlandim.carteirama.model.Client;
+import com.parlandim.carteirama.model.enums.ChargeKind;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
 import com.parlandim.carteirama.model.enums.ClientStatus;
 import com.parlandim.carteirama.repository.AccountRepository;
@@ -83,8 +84,13 @@ public class ChargeService {
         if (client.getStatus() != ClientStatus.active) {
             throw ApiException.conflict("client_not_active", "O cliente não está ativo.");
         }
+        boolean oneOff = req.kind() == ChargeKind.one_off;
+        if (oneOff && req.description() == null) {
+            throw ValidationException.of("description", "required", "Descreva a cobrança avulsa.");
+        }
         LocalDate referenceMonth = req.dueDate().withDayOfMonth(1);
-        if (charges.existsByClientIdAndReferenceMonth(client.getId(), referenceMonth)) {
+        if (!oneOff && charges.existsByClientIdAndReferenceMonthAndKind(client.getId(), referenceMonth,
+                ChargeKind.recurring)) {
             throw ApiException.conflict("charge_already_exists", "Este cliente já tem cobrança neste mês.");
         }
         Charge charge = new Charge();
@@ -95,6 +101,8 @@ public class ChargeService {
         charge.setDueDate(req.dueDate());
         charge.setStatus(ChargeStatus.pending);
         charge.setNote(req.note());
+        charge.setKind(req.kind());
+        charge.setDescription(oneOff ? req.description() : null);
         return ChargeResponse.of(charges.saveAndFlush(charge), clock.today());
     }
 
@@ -110,6 +118,15 @@ public class ChargeService {
         }
         if (req.getNote() != null) {
             charge.setNote(req.getNote().orElse(null));
+        }
+        if (req.getDescription() != null) {
+            if (charge.getKind() != ChargeKind.one_off) {
+                throw ValidationException.of("description", "not_allowed", "Só cobranças avulsas têm descrição.");
+            }
+            if (req.getDescription().isEmpty()) {
+                throw ValidationException.of("description", "required", "Descreva a cobrança avulsa.");
+            }
+            charge.setDescription(req.getDescription());
         }
         return ChargeResponse.of(charges.saveAndFlush(charge), clock.today());
     }

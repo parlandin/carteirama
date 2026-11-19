@@ -146,6 +146,56 @@ class ChargeTest extends IntegrationTest {
     }
 
     @Test
+    void cobrancaAvulsaConviveComAMensalidadeDoMes() {
+        Api api = registered();
+        String g = group(api, "G");
+        String ana = client(api, g, "Ana", 5000, 10);
+        api.post("/api/v1/charges/generate", Map.of("month", "2026-12"));
+
+        var semDescricao = api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "one_off",
+                "amount_cents", 100, "due_date", "2026-12-15"));
+        assertThat(semDescricao.details()).containsExactly("description:required");
+        assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "outro", "amount_cents", 100,
+                "due_date", "2026-12-15")).details()).containsExactly("kind:invalid_value");
+
+        var avulsa = api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "one_off",
+                "description", "  Instalação ", "amount_cents", 15000, "due_date", "2026-12-15"));
+        assertThat(avulsa.status()).isEqualTo(201);
+        assertThat(avulsa.json().path("kind").asString()).isEqualTo("one_off");
+        assertThat(avulsa.json().path("description").asString()).isEqualTo("Instalação");
+        assertThat(avulsa.json().path("reference_month").asString()).isEqualTo("2026-12-01");
+        String id = avulsa.json().path("id").asString();
+
+        // Mais de uma avulsa no mesmo mês é permitido; a mensalidade continua única.
+        assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "one_off",
+                "description", "Visita técnica", "amount_cents", 8000, "due_date", "2026-12-20")).status()).isEqualTo(201);
+        assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "amount_cents", 5000,
+                "due_date", "2026-12-10")).code()).isEqualTo("charge_already_exists");
+        assertThat(api.post("/api/v1/charges/generate", Map.of("month", "2026-12")).json().path("created").asInt()).isZero();
+
+        var list = api.get("/api/v1/charges?month=2026-12").json().path("data");
+        assertThat(list).hasSize(3);
+        assertThat(list.get(0).path("kind").asString()).isEqualTo("recurring");
+        assertThat(list.get(0).path("description").isNull()).isTrue();
+
+        var resumo = api.get("/api/v1/summary?month=2026-12").json();
+        assertThat(resumo.path("total_cents").asLong()).isEqualTo(28000);
+        assertThat(api.get("/api/v1/groups?month=2026-12").json().path("data").get(0)
+                .path("month_total_cents").asLong()).isEqualTo(28000);
+
+        var edit = api.patch("/api/v1/charges/" + id, Map.of("description", "Instalação e treinamento"));
+        assertThat(edit.json().path("description").asString()).isEqualTo("Instalação e treinamento");
+        assertThat(api.patch("/api/v1/charges/" + id, Map.of("description", "  ")).details())
+                .containsExactly("description:required");
+        String mensalidade = list.get(0).path("id").asString();
+        assertThat(api.patch("/api/v1/charges/" + mensalidade, Map.of("description", "x")).details())
+                .containsExactly("description:not_allowed");
+
+        var detalhe = api.get("/api/v1/clients/" + ana).json().path("charges");
+        assertThat(detalhe).hasSize(3);
+    }
+
+    @Test
     void isolamentoEContaSuspensa() {
         Api a = registered();
         Api b = registered();
