@@ -62,7 +62,7 @@ class ResendEmailSenderTest {
         replies.add(new Reply(500, "{\"message\":\"erro\"}", null));
         replies.add(new Reply(429, "{\"message\":\"devagar\"}", "2"));
 
-        sender.send("ana@exemplo.com", "Redefinir sua senha", "Olá, Ana.");
+        sender.send(new EmailMessage("ana@exemplo.com", "Redefinir sua senha", "Olá, Ana.", "<p>Olá, Ana.</p>"));
 
         assertThat(requests).hasSize(3);
         assertThat(requests).allSatisfy(r -> assertThat(r.auth()).isEqualTo("Bearer re_test"));
@@ -71,7 +71,8 @@ class ResendEmailSenderTest {
                 .contains("\"from\":\"Carteirama <onboarding@resend.dev>\"")
                 .contains("\"to\":[\"ana@exemplo.com\"]")
                 .contains("\"subject\":\"Redefinir sua senha\"")
-                .contains("\"text\":\"Olá, Ana.\"");
+                .contains("\"text\":\"Olá, Ana.\"")
+                .contains("\"html\":\"<p>Olá, Ana.</p>\"");
         assertThat(waits).containsExactly(Duration.ofMillis(500), Duration.ofSeconds(2));
     }
 
@@ -79,7 +80,7 @@ class ResendEmailSenderTest {
     void erro4xxNaoRepeteENaoLancaExcecao() {
         replies.add(new Reply(422, "{\"message\":\"from inválido\"}", null));
 
-        sender.send("ana@exemplo.com", "Assunto", "Corpo");
+        sender.send(new EmailMessage("ana@exemplo.com", "Assunto", "Corpo", null));
 
         assertThat(requests).hasSize(1);
         assertThat(waits).isEmpty();
@@ -90,7 +91,7 @@ class ResendEmailSenderTest {
         for (int i = 0; i < 5; i++) {
             replies.add(new Reply(503, "{}", null));
         }
-        sender.send("ana@exemplo.com", "Assunto", "Corpo");
+        sender.send(new EmailMessage("ana@exemplo.com", "Assunto", "Corpo", null));
 
         assertThat(requests).hasSize(ResendEmailSender.MAX_ATTEMPTS);
         assertThat(waits).containsExactly(Duration.ofMillis(500), Duration.ofSeconds(1));
@@ -98,8 +99,8 @@ class ResendEmailSenderTest {
 
     @Test
     void novoEmailGanhaNovaIdempotencyKey() {
-        sender.send("ana@exemplo.com", "Um", "Corpo");
-        sender.send("ana@exemplo.com", "Dois", "Corpo");
+        sender.send(new EmailMessage("ana@exemplo.com", "Um", "Corpo", null));
+        sender.send(new EmailMessage("ana@exemplo.com", "Dois", "Corpo", null));
 
         assertThat(requests).hasSize(2);
         assertThat(requests.get(0).idempotencyKey()).isNotEqualTo(requests.get(1).idempotencyKey());

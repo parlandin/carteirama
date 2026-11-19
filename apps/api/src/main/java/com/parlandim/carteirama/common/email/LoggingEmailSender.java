@@ -7,8 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 public class LoggingEmailSender implements EmailSender {
 
     @Override
-    public void send(String to, String subject, String body) {
-        log.info("E-mail (sem provedor configurado) para {}: {}", to, subject);
-        log.debug("Corpo do e-mail para {}:\n{}", to, body);
+    public void send(EmailMessage message) {
+        log.info("E-mail (sem provedor configurado) para {}: {}", message.to(), message.subject());
+        log.debug("Corpo do e-mail para {}:\n{}", message.to(), message.text());
     }
 }

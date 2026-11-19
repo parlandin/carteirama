@@ -4,6 +4,7 @@ import com.parlandim.carteirama.auth.dto.LoginRequest;
 import com.parlandim.carteirama.auth.dto.RegisterRequest;
 import com.parlandim.carteirama.common.CarteiramaProperties;
 import com.parlandim.carteirama.common.email.EmailSender;
+import com.parlandim.carteirama.common.email.EmailTemplates;
 import com.parlandim.carteirama.common.error.ApiException;
 import com.parlandim.carteirama.common.error.ValidationException;
 import com.parlandim.carteirama.common.security.AuthUser;
@@ -46,6 +47,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RateLimiter rateLimiter;
     private final EmailSender emailSender;
+    private final EmailTemplates emailTemplates;
     private final SessionService sessionService;
     private final BusinessClock clock;
     private final CarteiramaProperties properties;
@@ -130,9 +132,7 @@ public class AuthService {
             reset.setExpiresAt(clock.now().plus(RESET_TTL));
             passwordResets.save(reset);
             String link = properties.frontendUrl() + "/reset-password?token=" + token;
-            emailSender.send(user.getEmail(), "Redefinir sua senha no Carteirama",
-                    "Olá, " + user.getName() + ".\n\nPara criar uma nova senha, acesse o link abaixo "
-                            + "(válido por 1 hora):\n" + link + "\n\nSe não foi você, ignore este e-mail.");
+            emailSender.send(emailTemplates.passwordReset(user.getEmail(), user.getName(), link));
         });
     }
 

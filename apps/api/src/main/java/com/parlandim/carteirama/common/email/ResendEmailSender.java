@@ -55,9 +55,18 @@ public class ResendEmailSender implements EmailSender {
     }
 
     @Override
-    public void send(String to, String subject, String body) {
+    public void send(EmailMessage message) {
+        String to = message.to();
+        String subject = message.subject();
         String idempotencyKey = UUID.randomUUID().toString();
-        Map<String, Object> payload = Map.of("from", from, "to", List.of(to), "subject", subject, "text", body);
+        Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("from", from);
+        payload.put("to", List.of(to));
+        payload.put("subject", subject);
+        payload.put("text", message.text());
+        if (message.html() != null) {
+            payload.put("html", message.html());
+        }
         for (int attempt = 1; ; attempt++) {
             Duration wait;
             try {

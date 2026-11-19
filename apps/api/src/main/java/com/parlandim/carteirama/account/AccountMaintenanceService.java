@@ -1,6 +1,7 @@
 package com.parlandim.carteirama.account;
 
 import com.parlandim.carteirama.common.email.EmailSender;
+import com.parlandim.carteirama.common.email.EmailTemplates;
 import com.parlandim.carteirama.model.Account;
 import com.parlandim.carteirama.model.Invoice;
 import com.parlandim.carteirama.repository.AccountRepository;
@@ -9,41 +10,31 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AccountMaintenanceService {
 
-    private static final DateTimeFormatter BR_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
     private final AccountRepository accounts;
     private final AccountStateService accountState;
     private final EmailSender emailSender;
+    private final EmailTemplates emailTemplates;
     private final JdbcTemplate jdbc;
 
     @Transactional
     public void autoSuspend(UUID accountId, String reason) {
         Account account = accounts.findById(accountId).orElseThrow();
         accountState.suspend(account, null, reason);
-        emailSender.send(account.getUser().getEmail(), "Sua conta no Carteirama foi suspensa",
-                "Olá, " + account.getUser().getName() + ".\n\n"
-                        + ("trial_expired".equals(reason)
-                        ? "Seu período de teste terminou."
-                        : "Há uma fatura em aberto há mais de alguns dias.")
-                        + " Seus dados continuam disponíveis para consulta e exportação. Para voltar a editar, "
-                        + "regularize a assinatura na tela Assinatura.");
+        emailSender.send(emailTemplates.accountSuspended(account.getUser().getEmail(), account.getUser().getName(),
+                "trial_expired".equals(reason)));
     }
 
     @Transactional(readOnly = true)
     public void sendDueReminder(Invoice invoice) {
         Account account = accounts.findById(invoice.getAccount().getId()).orElseThrow();
-        emailSender.send(account.getUser().getEmail(), "Sua fatura " + invoice.getNumber() + " vence em 3 dias",
-                "Olá, " + account.getUser().getName() + ".\n\nA fatura " + invoice.getNumber() + " de R$ "
-                        + BigDecimal.valueOf(invoice.getAmountCents(), 2).toPlainString().replace('.', ',')
-                        + " vence em " + invoice.getDueDate().format(BR_DATE) + ".");
+        emailSender.send(emailTemplates.invoiceDue(account.getUser().getEmail(), account.getUser().getName(),
+                invoice.getNumber(), invoice.getAmountCents(), invoice.getDueDate()));
     }
 
     @Transactional
