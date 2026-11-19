@@ -56,6 +56,11 @@ const router = createBrowserRouter([
     path: "/admin",
     element: <AdminLayout />,
     children: [
+      { index: true, lazy: page(() => import("./pages/admin/Overview")) },
+      { path: "contas", lazy: page(() => import("./pages/admin/Accounts")) },
+      { path: "contas/:id", lazy: page(() => import("./pages/admin/AccountDetail")) },
+      { path: "pagamentos", lazy: page(() => import("./pages/admin/Payments")) },
+      { path: "planos", lazy: page(() => import("./pages/admin/Plans")) },
     ],
   },
   { path: "*", element: <NotFound /> },
