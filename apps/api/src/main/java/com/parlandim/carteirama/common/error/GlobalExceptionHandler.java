@@ -112,7 +112,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         Class<?> type = ex.getRequiredType();
-        String code = type != null && type.isEnum() ? "invalid_value" : "invalid_format";
+        // Em parâmetros de lista (ex.: ?type=a&type=b), o que importa é o tipo do elemento
+        Class<?> element = ex.getParameter().nested().getNestedParameterType();
+        boolean isEnum = (type != null && type.isEnum()) || element.isEnum();
+        String code = isEnum ? "invalid_value" : "invalid_format";
         return validation(List.of(ErrorResponse.Detail.of(ex.getName(), code)));
     }
 

@@ -1,6 +1,7 @@
 package com.parlandim.carteirama.export;
 
 import com.parlandim.carteirama.common.time.BusinessClock;
+import com.parlandim.carteirama.group.dto.GroupListItem;
 import com.parlandim.carteirama.model.Charge;
 import com.parlandim.carteirama.model.Client;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
@@ -17,7 +18,16 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -36,29 +46,173 @@ public class ExportService {
     private final GroupRepository groups;
     private final BusinessClock clock;
 
+    /**
+     * Exporta os tipos pedidos numa única tabela. Com um tipo só, a planilha é a daquele tipo; com vários,
+     * as colunas de cada tipo são juntadas numa linha por cliente (ou por cobrança, sem clientes), e os grupos
+     * sem nenhuma linha entram também, para que nada selecionado fique de fora.
+     */
     @Transactional(readOnly = true)
-    public File export(UUID accountId, Type type, Format format, YearMonth month) {
-        Sheet sheet = switch (type) {
-            case clients -> clientsSheet(accountId);
-            case charges -> chargesSheet(accountId, month);
-            case groups -> groupsSheet(accountId, month);
-        };
-        String base = "carteirama-" + switch (type) {
-            case clients -> "clientes";
-            case charges -> "cobrancas-" + month;
-            case groups -> "grupos-" + month;
-        };
+    public File export(UUID accountId, Collection<Type> requested, Format format, YearMonth month) {
+        Set<Type> types = EnumSet.copyOf(requested);
+        Sheet sheet;
+        String base;
+        if (types.size() == 1) {
+            Type type = types.iterator().next();
+            sheet = switch (type) {
+                case clients -> clientsSheet(accountId);
+                case charges -> chargesSheet(accountId, month);
+                case groups -> groupsSheet(accountId, month);
+            };
+            base = "carteirama-" + switch (type) {
+                case clients -> "clientes";
+                case charges -> "cobrancas-" + month;
+                case groups -> "grupos-" + month;
+            };
+        } else {
+            sheet = combinedSheet(accountId, types, month);
+            List<String> parts = new ArrayList<>();
+            if (types.contains(Type.clients)) {
+                parts.add("clientes");
+            }
+            if (types.contains(Type.groups)) {
+                parts.add("grupos");
+            }
+            if (types.contains(Type.charges)) {
+                parts.add("cobrancas");
+            }
+            base = "carteirama-" + String.join("-", parts) + "-" + month;
+        }
         return format == Format.csv
                 ? new File(base + ".csv", "text/csv; charset=UTF-8", SheetWriters.csv(sheet))
                 : new File(base + ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 SheetWriters.xlsx(sheet));
     }
 
+    private record Line(String group, String client, List<Object> cells) {
+    }
+
+    private Sheet combinedSheet(UUID accountId, Set<Type> types, YearMonth month) {
+        boolean withClients = types.contains(Type.clients);
+        boolean withGroups = types.contains(Type.groups);
+        boolean withCharges = types.contains(Type.charges);
+        LocalDate today = clock.today();
+
+        Map<UUID, GroupListItem> groupStats = new LinkedHashMap<>();
+        if (withGroups) {
+            for (GroupListItem g : groups.listWithTotals(accountId, month.atDay(1))) {
+                groupStats.put(g.id(), g);
+            }
+        }
+        List<Charge> monthCharges = withCharges ? monthCharges(accountId, month) : List.of();
+
+        List<String> headers = new ArrayList<>(List.of("Cliente"));
+        if (withClients) {
+            headers.addAll(List.of("Documento", "E-mail", "Telefone", "Assinatura (R$)", "Dia de vencimento",
+                    "Status do cliente", "Observações do cliente"));
+        }
+        headers.add("Grupo");
+        if (withGroups) {
+            headers.addAll(List.of("Cor do grupo", "Clientes no grupo", "Total do grupo no mês (R$)",
+                    "Descrição do grupo"));
+        }
+        if (withCharges) {
+            headers.addAll(List.of("Mês", "Vencimento", "Valor cobrado (R$)", "Situação da cobrança", "Pago em",
+                    "Nota da cobrança"));
+        }
+
+        List<Line> lines = new ArrayList<>();
+        Set<UUID> groupsWithLines = new HashSet<>();
+
+        if (withClients) {
+            Map<UUID, Charge> chargeByClient = new HashMap<>();
+            for (Charge c : monthCharges) {
+                chargeByClient.merge(c.getClient().getId(), c,
+                        (a, b) -> a.getStatus() == ChargeStatus.cancelled ? b : a);
+            }
+            for (Client c : allClients(accountId)) {
+                List<Object> row = new ArrayList<>(Arrays.asList(c.getName(), c.getDocument(), c.getEmail(),
+                        c.getPhone(), new Sheet.Money(c.getAmountCents()), (int) c.getDueDay(), label(c.getStatus()),
+                        c.getNotes(), c.getGroup().getName()));
+                if (withGroups) {
+                    row.addAll(groupCells(groupStats.get(c.getGroup().getId())));
+                }
+                if (withCharges) {
+                    row.addAll(chargeCells(chargeByClient.get(c.getId()), month, today));
+                }
+                groupsWithLines.add(c.getGroup().getId());
+                lines.add(new Line(c.getGroup().getName(), c.getName(), row));
+            }
+        } else {
+            for (Charge c : monthCharges) {
+                List<Object> row = new ArrayList<>(Arrays.asList(c.getClient().getName(),
+                        c.getClient().getGroup().getName()));
+                if (withGroups) {
+                    row.addAll(groupCells(groupStats.get(c.getClient().getGroup().getId())));
+                }
+                row.addAll(chargeCells(c, month, today));
+                groupsWithLines.add(c.getClient().getGroup().getId());
+                lines.add(new Line(c.getClient().getGroup().getName(), c.getClient().getName(), row));
+            }
+        }
+
+        if (withGroups) {
+            for (GroupListItem g : groupStats.values()) {
+                if (groupsWithLines.contains(g.id())) {
+                    continue;
+                }
+                List<Object> row = new ArrayList<>();
+                row.add(null);
+                if (withClients) {
+                    row.addAll(Collections.nCopies(7, null));
+                }
+                row.add(g.name());
+                row.addAll(groupCells(g));
+                if (withCharges) {
+                    row.addAll(Collections.nCopies(6, null));
+                }
+                lines.add(new Line(g.name(), "", row));
+            }
+        }
+
+        Comparator<String> ci = String.CASE_INSENSITIVE_ORDER;
+        lines.sort(Comparator.comparing(Line::group, ci).thenComparing(Line::client, ci));
+        return new Sheet("Carteirama " + month, headers, lines.stream().map(Line::cells).toList());
+    }
+
+    private static List<Object> groupCells(GroupListItem g) {
+        if (g == null) {
+            return Arrays.asList(null, null, null, null);
+        }
+        return Arrays.asList(g.color(), g.clientCount(), new Sheet.Money(g.monthTotalCents()), g.notes());
+    }
+
+    private static List<Object> chargeCells(Charge c, YearMonth month, LocalDate today) {
+        if (c == null) {
+            return Arrays.asList(month.toString(), null, null, null, null, null);
+        }
+        return Arrays.asList(month.toString(), c.getDueDate(), new Sheet.Money(c.getAmountCents()),
+                chargeLabel(c, today), c.getPaidAt(), c.getNote());
+    }
+
+    private static String chargeLabel(Charge c, LocalDate today) {
+        boolean late = c.getStatus() == ChargeStatus.pending && c.getDueDate().isBefore(today);
+        return late ? "Atrasada" : label(c.getStatus());
+    }
+
+    private List<Client> allClients(UUID accountId) {
+        return clients.findAll((root, q, cb) -> cb.equal(root.get("account").get("id"), accountId),
+                Sort.by(Sort.Order.asc("name").ignoreCase()));
+    }
+
+    private List<Charge> monthCharges(UUID accountId, YearMonth month) {
+        return charges.findAll((root, q, cb) -> cb.and(
+                cb.equal(root.get("account").get("id"), accountId),
+                cb.equal(root.get("referenceMonth"), month.atDay(1))), Sort.by("dueDate", "id"));
+    }
+
     private Sheet clientsSheet(UUID accountId) {
         List<List<Object>> rows = new ArrayList<>();
-        List<Client> all = clients.findAll((root, q, cb) -> cb.equal(root.get("account").get("id"), accountId),
-                Sort.by(Sort.Order.asc("name").ignoreCase()));
-        for (Client c : all) {
+        for (Client c : allClients(accountId)) {
             rows.add(Arrays.asList(c.getName(), c.getGroup().getName(), c.getDocument(), c.getEmail(), c.getPhone(),
                     new Sheet.Money(c.getAmountCents()), (int) c.getDueDay(), label(c.getStatus()), c.getNotes()));
         }
@@ -69,13 +223,9 @@ public class ExportService {
     private Sheet chargesSheet(UUID accountId, YearMonth month) {
         LocalDate today = clock.today();
         List<List<Object>> rows = new ArrayList<>();
-        List<Charge> all = charges.findAll((root, q, cb) -> cb.and(
-                cb.equal(root.get("account").get("id"), accountId),
-                cb.equal(root.get("referenceMonth"), month.atDay(1))), Sort.by("dueDate", "id"));
-        for (Charge c : all) {
-            boolean late = c.getStatus() == ChargeStatus.pending && c.getDueDate().isBefore(today);
+        for (Charge c : monthCharges(accountId, month)) {
             rows.add(Arrays.asList(c.getClient().getName(), c.getClient().getGroup().getName(), month.toString(),
-                    c.getDueDate(), new Sheet.Money(c.getAmountCents()), late ? "Atrasada" : label(c.getStatus()),
+                    c.getDueDate(), new Sheet.Money(c.getAmountCents()), chargeLabel(c, today),
                     c.getPaidAt(), c.getNote()));
         }
         return new Sheet("Cobranças " + month, List.of("Cliente", "Grupo", "Mês", "Vencimento", "Valor (R$)",

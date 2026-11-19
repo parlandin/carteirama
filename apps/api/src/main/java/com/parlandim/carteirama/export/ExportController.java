@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/export")
 @RequiredArgsConstructor
@@ -23,7 +25,7 @@ public class ExportController {
 
     @GetMapping
     public ResponseEntity<byte[]> export(@AuthenticationPrincipal AuthUser user,
-                                         @RequestParam ExportService.Type type,
+                                         @RequestParam List<ExportService.Type> type,
                                          @RequestParam ExportService.Format format,
                                          @RequestParam(required = false) String month) {
         var file = exportService.export(user.requireAccountId(), type, format, clock.parseMonth("month", month));
