@@ -29,10 +29,12 @@ public interface ChargeRepository extends JpaRepository<Charge, UUID>, JpaSpecif
     @EntityGraph(attributePaths = {"client", "client.group"})
     List<Charge> findAllByAccountIdAndClientIdOrderByReferenceMonthDesc(UUID accountId, UUID clientId);
 
+    Optional<Charge> findFirstByClientIdAndReferenceMonthAndKind(UUID clientId, LocalDate referenceMonth, ChargeKind kind);
+
     boolean existsByClientIdAndReferenceMonthAndKind(UUID clientId, LocalDate referenceMonth, ChargeKind kind);
 
     @Query("""
-            select c.status, c.dueDate, c.amountCents from Charge c
+            select c.status, c.dueDate, c.amountCents, c.bonusCents, c.costCents from Charge c
             where c.account.id = :accountId and c.referenceMonth = :month and c.status <> :cancelled
             """)
     List<Object[]> monthFigures(UUID accountId, LocalDate month, ChargeStatus cancelled);

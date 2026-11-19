@@ -117,8 +117,9 @@ public class ExportService {
                     "Descrição do grupo"));
         }
         if (withCharges) {
-            headers.addAll(List.of("Mês", "Cobrança", "Vencimento", "Valor cobrado (R$)", "Situação da cobrança",
-                    "Pago em", "Nota da cobrança"));
+            headers.addAll(List.of("Mês", "Cobrança", "Vencimento", "Serviço (R$)", "Bônus (R$)",
+                    "Valor cobrado (R$)", "Custos (R$)", "Líquido (R$)", "Situação da cobrança", "Pago em",
+                    "Nota da cobrança"));
         }
 
         List<Line> lines = new ArrayList<>();
@@ -174,7 +175,7 @@ public class ExportService {
                 row.add(g.name());
                 row.addAll(groupCells(g));
                 if (withCharges) {
-                    row.addAll(Collections.nCopies(7, null));
+                    row.addAll(Collections.nCopies(11, null));
                 }
                 lines.add(new Line(g.name(), "", row));
             }
@@ -194,10 +195,11 @@ public class ExportService {
 
     private static List<Object> chargeCells(Charge c, YearMonth month, LocalDate today) {
         if (c == null) {
-            return Arrays.asList(month.toString(), null, null, null, null, null, null);
+            return Arrays.asList(month.toString(), null, null, null, null, null, null, null, null, null, null);
         }
         return Arrays.asList(month.toString(), chargeName(c), c.getDueDate(), new Sheet.Money(c.getAmountCents()),
-                chargeLabel(c, today), c.getPaidAt(), c.getNote());
+                new Sheet.Money(c.getBonusCents()), new Sheet.Money(c.getTotalCents()), new Sheet.Money(c.getCostCents()),
+                new Sheet.Money(c.getNetCents()), chargeLabel(c, today), c.getPaidAt(), c.getNote());
     }
 
     private static String chargeName(Charge c) {
@@ -235,10 +237,13 @@ public class ExportService {
         List<List<Object>> rows = new ArrayList<>();
         for (Charge c : monthCharges(accountId, month)) {
             rows.add(Arrays.asList(c.getClient().getName(), c.getClient().getGroup().getName(), month.toString(),
-                    chargeName(c), c.getDueDate(), new Sheet.Money(c.getAmountCents()), chargeLabel(c, today),
+                    chargeName(c), c.getDueDate(), new Sheet.Money(c.getAmountCents()),
+                    new Sheet.Money(c.getBonusCents()), new Sheet.Money(c.getTotalCents()),
+                    new Sheet.Money(c.getCostCents()), new Sheet.Money(c.getNetCents()), chargeLabel(c, today),
                     c.getPaidAt(), c.getNote()));
         }
-        return new Sheet("Cobranças " + month, List.of("Cliente", "Grupo", "Mês", "Cobrança", "Vencimento", "Valor (R$)",
+        return new Sheet("Cobranças " + month, List.of("Cliente", "Grupo", "Mês", "Cobrança", "Vencimento", "Serviço (R$)", "Bônus (R$)",
+                "Valor cobrado (R$)", "Custos (R$)", "Líquido (R$)",
                 "Status", "Pago em", "Nota"), rows);
     }
 

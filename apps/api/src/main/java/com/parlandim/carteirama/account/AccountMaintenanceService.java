@@ -50,6 +50,7 @@ public class AccountMaintenanceService {
     public void purge(UUID accountId) {
         UUID userId = jdbc.queryForObject("SELECT user_id FROM accounts WHERE id = ?", UUID.class, accountId);
         jdbc.update("DELETE FROM charges WHERE account_id = ?", accountId);
+        jdbc.update("DELETE FROM client_extras WHERE account_id = ?", accountId);
         jdbc.update("DELETE FROM clients WHERE account_id = ?", accountId);
         jdbc.update("DELETE FROM groups WHERE account_id = ?", accountId);
         jdbc.update("DELETE FROM invoices WHERE account_id = ?", accountId);

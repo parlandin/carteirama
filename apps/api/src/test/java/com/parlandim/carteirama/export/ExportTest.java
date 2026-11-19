@@ -23,8 +23,8 @@ class ExportTest extends IntegrationTest {
         assertThat(csv.headers().firstValue("content-type").orElseThrow()).startsWith("text/csv");
         assertThat(csv.headers().firstValue("content-disposition").orElseThrow())
                 .contains("carteirama-cobrancas-2026-12.csv");
-        assertThat(csv.raw()).contains("Cliente;Grupo;Mês;Cobrança;Vencimento;Valor (R$);Status;Pago em;Nota");
-        assertThat(csv.raw()).contains("'=Ana;\"Projeto; X\";2026-12;Mensalidade;10/12/2026;59,00;Pendente;;");
+        assertThat(csv.raw()).contains("Cliente;Grupo;Mês;Cobrança;Vencimento;Serviço (R$);Bônus (R$);Valor cobrado (R$);Custos (R$);Líquido (R$);Status;Pago em;Nota");
+        assertThat(csv.raw()).contains("'=Ana;\"Projeto; X\";2026-12;Mensalidade;10/12/2026;59,00;0,00;59,00;0,00;59,00;Pendente;;");
 
         var xlsx = api.get("/api/v1/export?type=clients&format=xlsx");
         assertThat(xlsx.status()).isEqualTo(200);
@@ -53,21 +53,21 @@ class ExportTest extends IntegrationTest {
         String[] lines = all.raw().replace("﻿", "").split("\r\n");
         assertThat(lines[0]).isEqualTo("Cliente;Documento;E-mail;Telefone;Assinatura (R$);Dia de vencimento;"
                 + "Status do cliente;Observações do cliente;Grupo;Cor do grupo;Clientes no grupo;"
-                + "Total do grupo no mês (R$);Descrição do grupo;Mês;Cobrança;Vencimento;Valor cobrado (R$);"
-                + "Situação da cobrança;Pago em;Nota da cobrança");
+                + "Total do grupo no mês (R$);Descrição do grupo;Mês;Cobrança;Vencimento;Serviço (R$);Bônus (R$);"
+                + "Valor cobrado (R$);Custos (R$);Líquido (R$);Situação da cobrança;Pago em;Nota da cobrança");
         assertThat(lines).hasSize(5);
         assertThat(lines[1]).isEqualTo("Ana;;;;59,00;10;Ativo;;Saas;;2;219,00;Plano mensal;2026-12;Mensalidade;"
-                + "10/12/2026;59,00;Pendente;;");
+                + "10/12/2026;59,00;0,00;59,00;0,00;59,00;Pendente;;");
         assertThat(lines[2]).isEqualTo("Ana;;;;59,00;10;Ativo;;Saas;;2;219,00;Plano mensal;2026-12;Instalação;"
-                + "20/12/2026;150,00;Pendente;;");
+                + "20/12/2026;150,00;0,00;150,00;0,00;150,00;Pendente;;");
         assertThat(lines[3]).startsWith("Bia;");
-        assertThat(lines[4]).isEqualTo(";;;;;;;;Vazio;;0;0,00;;;;;;;;");
+        assertThat(lines[4]).isEqualTo(";;;;;;;;Vazio;;0;0,00;;;;;;;;;;;;");
 
         var chargesAndGroups = api.get("/api/v1/export?type=charges,groups&format=csv&month=2026-12");
         assertThat(chargesAndGroups.raw()).contains("Cliente;Grupo;Cor do grupo;Clientes no grupo;");
         assertThat(chargesAndGroups.raw())
-                .contains("Ana;Saas;;2;219,00;Plano mensal;2026-12;Mensalidade;10/12/2026;59,00;Pendente;;")
-                .contains("Ana;Saas;;2;219,00;Plano mensal;2026-12;Instalação;20/12/2026;150,00;Pendente;;");
+                .contains("Ana;Saas;;2;219,00;Plano mensal;2026-12;Mensalidade;10/12/2026;59,00;0,00;59,00;0,00;59,00;Pendente;;")
+                .contains("Ana;Saas;;2;219,00;Plano mensal;2026-12;Instalação;20/12/2026;150,00;0,00;150,00;0,00;150,00;Pendente;;");
 
         assertThat(api.get("/api/v1/export?type=clients&type=groups&format=xlsx").raw()).startsWith("PK");
     }

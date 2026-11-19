@@ -3,6 +3,8 @@ package com.parlandim.carteirama.client;
 import com.parlandim.carteirama.client.dto.ClientDetailResponse;
 import com.parlandim.carteirama.client.dto.ClientResponse;
 import com.parlandim.carteirama.client.dto.CreateClientRequest;
+import com.parlandim.carteirama.client.dto.CreateExtraRequest;
+import com.parlandim.carteirama.client.dto.ExtraResponse;
 import com.parlandim.carteirama.client.dto.UpdateClientRequest;
 import com.parlandim.carteirama.common.security.AuthUser;
 import com.parlandim.carteirama.common.security.WriteAccess;
@@ -33,6 +35,7 @@ import java.util.UUID;
 public class ClientController {
 
     private final ClientService clientService;
+    private final ClientExtraService extraService;
 
     @GetMapping
     public PageResponse<ClientResponse> list(@AuthenticationPrincipal AuthUser user,
@@ -62,6 +65,21 @@ public class ClientController {
     public ClientResponse update(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id,
                                  @Valid @RequestBody UpdateClientRequest body) {
         return clientService.update(user.requireAccountId(), id, body);
+    }
+
+    @PostMapping("/{id}/extras")
+    @WriteAccess
+    @ResponseStatus(HttpStatus.CREATED)
+    public ExtraResponse addExtra(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id,
+                                  @Valid @RequestBody CreateExtraRequest body) {
+        return extraService.create(user.requireAccountId(), id, body);
+    }
+
+    @DeleteMapping("/{id}/extras/{extraId}")
+    @WriteAccess
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeExtra(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id, @PathVariable UUID extraId) {
+        extraService.remove(user.requireAccountId(), id, extraId);
     }
 
     @DeleteMapping("/{id}")

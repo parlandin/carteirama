@@ -39,6 +39,7 @@ public class ClientService {
     private final ChargeRepository charges;
     private final AccountRepository accounts;
     private final BusinessClock clock;
+    private final ClientExtraService extraService;
 
     @Transactional(readOnly = true)
     public PageResponse<ClientResponse> list(UUID accountId, UUID groupId, ClientStatus status, String q, Pageable page) {
@@ -72,7 +73,7 @@ public class ClientService {
         LocalDate today = clock.today();
         List<ChargeResponse> history = charges.findAllByAccountIdAndClientIdOrderByReferenceMonthDesc(accountId, id)
                 .stream().map(c -> ChargeResponse.of(c, today)).toList();
-        return new ClientDetailResponse(ClientResponse.of(client), history);
+        return new ClientDetailResponse(ClientResponse.of(client), history, extraService.list(accountId, id));
     }
 
     @Transactional

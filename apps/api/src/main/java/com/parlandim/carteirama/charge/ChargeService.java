@@ -16,6 +16,7 @@ import com.parlandim.carteirama.model.enums.ClientStatus;
 import com.parlandim.carteirama.repository.AccountRepository;
 import com.parlandim.carteirama.repository.ChargeRepository;
 import com.parlandim.carteirama.repository.ClientRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,7 @@ public class ChargeService {
     private final ClientRepository clients;
     private final AccountRepository accounts;
     private final BusinessClock clock;
+    private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public PageResponse<ChargeResponse> list(UUID accountId, YearMonth month, StatusFilter status, UUID groupId,
@@ -103,7 +105,9 @@ public class ChargeService {
         charge.setNote(req.note());
         charge.setKind(req.kind());
         charge.setDescription(oneOff ? req.description() : null);
-        return ChargeResponse.of(charges.saveAndFlush(charge), clock.today());
+        charges.saveAndFlush(charge);
+        entityManager.refresh(charge); // carrega os bônus e custos do mês
+        return ChargeResponse.of(charge, clock.today());
     }
 
     @Transactional
@@ -172,12 +176,13 @@ public class ChargeService {
     @Transactional(readOnly = true)
     public SummaryResponse summary(UUID accountId, YearMonth month) {
         LocalDate today = clock.today();
-        long paid = 0, pending = 0, late = 0;
+        long paid = 0, pending = 0, late = 0, cost = 0;
         int paidN = 0, pendingN = 0, lateN = 0;
         for (Object[] row : charges.monthFigures(accountId, month.atDay(1), ChargeStatus.cancelled)) {
             ChargeStatus status = (ChargeStatus) row[0];
             LocalDate due = (LocalDate) row[1];
-            int amount = (Integer) row[2];
+            long amount = (Integer) row[2] + (Long) row[3];
+            cost += (Long) row[4];
             if (status == ChargeStatus.paid) {
                 paid += amount;
                 paidN++;
@@ -189,8 +194,9 @@ public class ChargeService {
                 pendingN++;
             }
         }
-        return new SummaryResponse(month.toString(), paid + pending + late, paid, pending, late,
-                paidN + pendingN + lateN, paidN, pendingN, lateN);
+        long total = paid + pending + late;
+        return new SummaryResponse(month.toString(), total, paid, pending, late,
+                paidN + pendingN + lateN, paidN, pendingN, lateN, cost, total - cost);
     }
 
     private Charge find(UUID accountId, UUID id) {
