@@ -105,6 +105,11 @@ export default function Charges() {
               <div className="h-full bg-amber" style={{ width: `${pct}%` }} />
             </div>
             <p className="mt-2 font-mono text-xs">{pct}% recebido</p>
+            {summary.cost_cents > 0 && (
+              <p className="mt-3 border-t border-white/20 pt-3 font-mono text-xs">
+                Líquido <strong className="text-sm text-amber">{money(summary.net_cents)}</strong> · custos {money(summary.cost_cents)}
+              </p>
+            )}
           </button>
           {cards.map((c) => (
             <button
@@ -188,7 +193,14 @@ export default function Charges() {
                       </span>
                       <span className="hidden min-w-0 md:block">{g && <GroupChip name={g.name} color={g.color} />}</span>
                       <span className="hidden font-mono text-sm md:block">{date(c.due_date)}</span>
-                      <span className="tabular text-right text-lg font-extrabold">{money(c.amount_cents)}</span>
+                      <span className="text-right">
+                        <span className="tabular block text-lg font-extrabold">{money(c.total_cents)}</span>
+                        {(c.bonus_cents > 0 || c.cost_cents > 0) && (
+                          <span className="block font-mono text-[11px] whitespace-nowrap text-muted" title={`Serviço ${money(c.amount_cents)} + bônus ${money(c.bonus_cents)} − custos ${money(c.cost_cents)}`}>
+                            líq. {money(c.net_cents)}
+                          </span>
+                        )}
+                      </span>
                       <span className="flex flex-wrap items-center gap-2 md:contents">
                         <StatusPill kind="charge" status={c.display_status} />
                         <span className="font-mono text-xs text-muted md:hidden">vence {date(c.due_date)}</span>

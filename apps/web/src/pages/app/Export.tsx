@@ -66,7 +66,7 @@ export default function Export() {
             title="Grupos"
             description={`${groups ? plural(groups.length, "grupo", "grupos") + " com" : "Grupos com"} descrição e total de ${monthLabel(month)}.`}
           />
-          <OptionCard type="checkbox" checked={types.has("charges")} onChange={() => toggle("charges")} title="Cobranças do mês" description={`Situação e valor de cada cliente em ${monthLabel(month)}.`} />
+          <OptionCard type="checkbox" checked={types.has("charges")} onChange={() => toggle("charges")} title="Cobranças do mês" description={`Situação, valor, bônus, custos e líquido de cada cobrança em ${monthLabel(month)}.`} />
           {usesMonth && (
             <div className="flex flex-wrap items-center gap-3 pl-1">
               <span className="text-sm font-semibold">Mês de referência:</span>

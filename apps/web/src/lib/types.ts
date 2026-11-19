@@ -94,6 +94,27 @@ export interface Charge {
   /** recurring: a mensalidade do mês; one_off: cobrança avulsa, com descrição. */
   kind: ChargeKind;
   description: string | null;
+  /** Bônus do cliente que valem neste mês (só na mensalidade). */
+  bonus_cents: number;
+  /** Custos do cliente neste mês: não mudam o valor cobrado. */
+  cost_cents: number;
+  /** Valor cobrado: serviço (amount_cents) + bônus. */
+  total_cents: number;
+  /** total_cents − cost_cents: o que sobra para você. */
+  net_cents: number;
+}
+
+export type ExtraKind = "bonus" | "cost";
+
+export interface ClientExtra {
+  id: string;
+  kind: ExtraKind;
+  description: string;
+  amount_cents: number;
+  recurring: boolean;
+  /** Primeiro mês em que vale (o único, quando não é recorrente). */
+  start_month: string;
+  end_month: string | null;
 }
 
 export type ChargeKind = "recurring" | "one_off";
@@ -101,6 +122,7 @@ export type ChargeKind = "recurring" | "one_off";
 export interface ClientDetail {
   client: Client;
   charges: Charge[];
+  extras: ClientExtra[];
 }
 
 export interface ChargeSummary {
@@ -113,6 +135,8 @@ export interface ChargeSummary {
   paid_count: number;
   pending_count: number;
   late_count: number;
+  cost_cents: number;
+  net_cents: number;
 }
 
 export interface Invoice {

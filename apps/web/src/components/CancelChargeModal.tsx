@@ -43,7 +43,7 @@ export function CancelChargeModal({ charge, onClose }: { charge: Charge | null; 
     >
       {charge && (
         <p>
-          <strong>{charge.description ?? "Mensalidade"}</strong> de {charge.client_name}, {money(charge.amount_cents)} com vencimento em {date(charge.due_date)}, sai do total do mês. Não dá para desfazer.
+          <strong>{charge.description ?? "Mensalidade"}</strong> de {charge.client_name}, {money(charge.total_cents)} com vencimento em {date(charge.due_date)}, sai do total do mês. Não dá para desfazer.
         </p>
       )}
     </Modal>

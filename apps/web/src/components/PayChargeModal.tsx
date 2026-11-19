@@ -65,7 +65,8 @@ export function PayChargeModal({ charge, onClose }: { charge: Charge | null; onC
             </div>
             <div>
               <dt className="font-mono text-[11px] tracking-widest text-muted uppercase">Valor</dt>
-              <dd className="font-extrabold">{money(charge.amount_cents)}</dd>
+              <dd className="font-extrabold">{money(charge.total_cents)}</dd>
+              {charge.bonus_cents > 0 && <dd className="text-xs text-muted">serviço {money(charge.amount_cents)} + bônus {money(charge.bonus_cents)}</dd>}
             </div>
           </dl>
           <Field label="Pago em" htmlFor="paid-at" hint="A data não pode ser futura.">

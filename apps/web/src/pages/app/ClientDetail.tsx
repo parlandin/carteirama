@@ -2,6 +2,7 @@ import { Archive, Check, Mail, NotebookPen, Pencil, Plus, ReceiptText, Undo2, Us
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { CancelChargeModal } from "../../components/CancelChargeModal";
+import { ExtrasCard, recurringTotals } from "../../components/ClientExtras";
 import { OneOffChargeModal } from "../../components/OneOffChargeModal";
 import { PayChargeModal } from "../../components/PayChargeModal";
 import { Button, Card, ErrorState, LinkButton, Loading, Modal, PageHeader, Pill, StatusPill, GroupChip } from "../../components/ui";
@@ -53,7 +54,8 @@ export default function ClientDetail() {
   if (isLoading) return <Loading />;
   if (error || !data) return <ErrorState message={errorMessage(error)} onRetry={refetch} />;
 
-  const { client, charges } = data;
+  const { client, charges, extras } = data;
+  const fixed = recurringTotals(extras);
   const archived = client.status === "archived";
   const month = currentMonth();
   const openCharge = charges.find((c) => c.status === "pending" && c.reference_month.startsWith(month)) ?? charges.find((c) => c.display_status === "late");
@@ -131,6 +133,7 @@ export default function ClientDetail() {
               }
             />
           </InfoCard>
+          <ExtrasCard clientId={client.id} extras={extras} canEdit={!readOnly && !archived} />
           <Card className="p-5 sm:p-7">
             <div className="mb-3 flex items-center gap-3">
               <NotebookPen className="size-5" />
@@ -156,6 +159,13 @@ export default function ClientDetail() {
             </p>
             <dl className="mt-6 divide-y divide-white/20 border-t border-white/20 text-[15px]">
               {[
+                ...(fixed.bonus > 0 || fixed.cost > 0
+                  ? [
+                      ["Bônus todo mês", `+ ${money(fixed.bonus)}`],
+                      ["Custos todo mês", `− ${money(fixed.cost)}`],
+                      ["Líquido por mês", <span className="text-amber">{money(client.amount_cents + fixed.bonus - fixed.cost)}</span>],
+                    ]
+                  : []),
                 ["Grupo", <Link to={`/app/grupos/${client.group_id}`} className="hover:underline">{client.group_name}</Link>],
                 ["Vencimento", `Todo dia ${client.due_day}`],
                 ["Situação", client.status === "active" ? "Ativo" : client.status === "paused" ? "Pausado" : "Arquivado"],
@@ -203,7 +213,8 @@ export default function ClientDetail() {
                         <p className="font-bold">{monthLabel(c.reference_month.slice(0, 7))}</p>
                       )}
                       <p className="font-mono text-xs text-muted">
-                        {c.status === "paid" ? `pago em ${shortDate(c.paid_at)}` : `vence ${shortDate(c.due_date)}`} · {money(c.amount_cents)}
+                        {c.status === "paid" ? `pago em ${shortDate(c.paid_at)}` : `vence ${shortDate(c.due_date)}`} · {money(c.total_cents)}
+                        {c.cost_cents > 0 && <> · líq. {money(c.net_cents)}</>}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">

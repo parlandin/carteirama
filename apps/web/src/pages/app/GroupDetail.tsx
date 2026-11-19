@@ -19,10 +19,10 @@ export default function GroupDetail() {
 
   const active = group.clients.filter((c) => c.status !== "archived");
   const valid = charges?.filter((c) => c.status !== "cancelled") ?? [];
-  const monthTotal = valid.reduce((s, c) => s + c.amount_cents, 0);
+  const monthTotal = valid.reduce((s, c) => s + c.total_cents, 0);
   const late = valid.filter((c) => c.display_status === "late");
   const lateIds = new Set(late.map((c) => c.client_id));
-  const lateTotal = late.reduce((s, c) => s + c.amount_cents, 0);
+  const lateTotal = late.reduce((s, c) => s + c.total_cents, 0);
   const subscriptionTotal = active.filter((c) => c.status === "active").reduce((s, c) => s + c.amount_cents, 0);
   const payingCount = active.filter((c) => c.status === "active").length;
   const ticket = payingCount > 0 ? Math.round(subscriptionTotal / payingCount) : 0;

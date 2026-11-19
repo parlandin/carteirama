@@ -1,6 +1,7 @@
-import { Check, Layers, Plus } from "lucide-react";
+import { Check, Layers, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { emptyExtra, ExtraFields, toExtraBody, type ExtraDraft, type ExtraErrors } from "../../components/ClientExtras";
 import { Button, Card, EmptyState, ErrorState, Field, FormError, FormSection, Input, LinkButton, Loading, PageHeader, Select, Textarea } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { isReadOnly, useMe } from "../../lib/auth";
@@ -34,6 +35,9 @@ function ClientForm({ initial }: { initial?: Client }) {
   const { data: groups, isLoading: loadingGroups } = useGroups(currentMonth());
   const editing = !!initial;
   const [busy, setBusy] = useState(false);
+  // Bônus e custos do cadastro (só em cliente novo; depois, ficam no detalhe do cliente).
+  const [extras, setExtras] = useState<ExtraDraft[]>([]);
+  const [extraErrors, setExtraErrors] = useState<ExtraErrors[]>([]);
 
   const { values, set, errors, setErrors, formError, setFormError, fail, reset } = useForm({
     name: initial?.name ?? "",
@@ -63,7 +67,11 @@ function ClientForm({ initial }: { initial?: Client }) {
     if (!values.group_id) local.group_id = "Escolha um grupo.";
     if (amount === null || amount < 1) local.amount_cents = "Informe um valor maior que zero.";
     if (!Number.isInteger(day) || day < 1 || day > 28) local.due_day = "Escolha um dia de 1 a 28.";
-    if (Object.keys(local).length) {
+    const extraResults = editing ? [] : extras.map(toExtraBody);
+    const extraErrs = extraResults.map((r) => ("errors" in r ? r.errors : {}));
+    setExtraErrors(extraErrs);
+    const extrasInvalid = extraErrs.some((x) => Object.keys(x).length > 0);
+    if (Object.keys(local).length || extrasInvalid) {
       setErrors(local);
       setFormError("Confira os campos destacados.");
       return;
@@ -82,9 +90,22 @@ function ClientForm({ initial }: { initial?: Client }) {
     setBusy(true);
     try {
       const saved = editing ? await api.patch<Client>(`/clients/${initial!.id}`, body) : await api.post<Client>("/clients", body);
+      let extrasFailed = 0;
+      for (const r of extraResults) {
+        if (!("body" in r)) continue;
+        try {
+          await api.post(`/clients/${saved.id}/extras`, r.body);
+        } catch {
+          extrasFailed++;
+        }
+      }
       resetAutoGenerate();
       await invalidate();
-      toast.show(editing ? "Cliente atualizado." : "Cliente cadastrado.");
+      if (extrasFailed > 0) {
+        toast.show(`Cliente cadastrado, mas ${extrasFailed === 1 ? "um bônus ou custo não foi salvo" : `${extrasFailed} bônus ou custos não foram salvos`}. Adicione de novo no detalhe do cliente.`, "error");
+      } else {
+        toast.show(editing ? "Cliente atualizado." : "Cliente cadastrado.");
+      }
       navigate(`/app/clientes/${saved.id}`, { replace: true });
     } catch (err) {
       fail(err);
@@ -204,6 +225,49 @@ function ClientForm({ initial }: { initial?: Client }) {
             </fieldset>
           )}
         </FormSection>
+
+        {!editing && (
+          <FormSection step={4} stepColor="#167A3C" title="Bônus e custos" description="Opcional. Bônus somam no valor cobrado; custos saem do seu ganho. Podem valer todo mês ou só em um mês.">
+            {extras.length > 0 && (
+              <ul className="mb-5 flex flex-col gap-4">
+                {extras.map((d, i) => (
+                  <li key={i} className="rounded-xl border-2 border-navy bg-paper-2 p-4 sm:p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="font-mono text-[11px] font-bold tracking-[0.14em] text-muted uppercase">[Item {i + 1}]</p>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-muted hover:text-red"
+                        onClick={() => {
+                          setExtras((xs) => xs.filter((_, j) => j !== i));
+                          setExtraErrors((xs) => xs.filter((_, j) => j !== i));
+                        }}
+                      >
+                        <Trash2 className="size-4" /> Remover
+                      </button>
+                    </div>
+                    <ExtraFields
+                      id={`extra-${i}`}
+                      value={d}
+                      errors={extraErrors[i]}
+                      onChange={(v) => {
+                        setExtras((xs) => xs.map((x, j) => (j === i ? v : x)));
+                        setExtraErrors((xs) => xs.map((x, j) => (j === i ? {} : x)));
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap gap-3">
+              <Button size="sm" icon={Plus} onClick={() => setExtras((xs) => [...xs, emptyExtra("bonus")])}>
+                Adicionar bônus
+              </Button>
+              <Button size="sm" icon={Plus} onClick={() => setExtras((xs) => [...xs, { ...emptyExtra("cost"), when: "recurring" }])}>
+                Adicionar custo
+              </Button>
+            </div>
+          </FormSection>
+        )}
 
         <Card className="p-5 sm:p-7">
           <h2 className="mb-4 text-xl font-bold">Observações</h2>
