@@ -32,9 +32,9 @@ class AuthTest extends IntegrationTest {
         assertThat(me.json().path("user").path("name").asString()).isEqualTo("Fulano de Tal");
 
         Map<String, Object> sub = jdbc.queryForMap("SELECT status::text AS status, price_cents, plan_code FROM subscriptions");
-        assertThat(sub).containsEntry("status", "trialing").containsEntry("price_cents", 5900).containsEntry("plan_code", "cloud");
+        assertThat(sub).containsEntry("status", "trialing").containsEntry("price_cents", 2499).containsEntry("plan_code", "cloud");
         assertThat(jdbc.queryForObject(
-                "SELECT trial_ends_at::date - created_at::date FROM accounts", Integer.class)).isEqualTo(14);
+                "SELECT trial_ends_at::date - created_at::date FROM accounts", Integer.class)).isEqualTo(7);
     }
 
     @Test

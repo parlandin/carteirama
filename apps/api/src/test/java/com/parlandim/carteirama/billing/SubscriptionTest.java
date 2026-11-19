@@ -39,7 +39,7 @@ class SubscriptionTest extends IntegrationTest {
         assertThat(sub.status()).isEqualTo(200);
         assertThat(sub.json().path("plan").path("code").asString()).isEqualTo("cloud");
         assertThat(sub.json().path("status").asString()).isEqualTo("trialing");
-        assertThat(sub.json().path("price_cents").asInt()).isEqualTo(5900);
+        assertThat(sub.json().path("price_cents").asInt()).isEqualTo(2499);
         assertThat(sub.json().path("account_status").asString()).isEqualTo("trial");
         assertThat(sub.json().path("usage").path("users").asInt()).isEqualTo(1);
         assertThat(sub.raw()).doesNotContain("gateway");

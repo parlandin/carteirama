@@ -46,6 +46,6 @@ logging:
 
 carteirama:
   frontend-url: ${FRONTEND_URL:http://localhost:8080}
-  trial-days: 14
+  trial-days: 7
   suspend-after-days: 5
   retention-days: 90

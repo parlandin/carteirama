@@ -60,7 +60,7 @@ public abstract class IntegrationTest {
                 TRUNCATE charges, clients, groups, audit_log, webhook_events, invoices, subscriptions,
                          password_resets, accounts, users, spring_session CASCADE
                 """);
-        jdbc.update("UPDATE plans SET price_cents = 5900, trial_days = 14, active = true WHERE code = 'cloud'");
+        jdbc.update("UPDATE plans SET price_cents = 2499, trial_days = 7, active = true WHERE code = 'cloud'");
         rateLimiter.clear();
         emails.clear();
     }

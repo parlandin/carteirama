@@ -29,7 +29,7 @@ public class Plan {
     private Integer priceCents;
 
     @Column(name = "trial_days", nullable = false)
-    private Integer trialDays = 14;
+    private Integer trialDays = 7;
 
     @Column(nullable = false)
     private boolean active = true;

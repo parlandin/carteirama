@@ -101,7 +101,7 @@ class AdminTest extends IntegrationTest {
 
         var detail = admin.get("/api/v1/admin/accounts/" + atrasada);
         assertThat(detail.json().path("invoices")).hasSize(1);
-        assertThat(detail.json().path("subscription").path("price_cents").asInt()).isEqualTo(5900);
+        assertThat(detail.json().path("subscription").path("price_cents").asInt()).isEqualTo(2499);
         assertThat(detail.raw()).doesNotContain("password").doesNotContain("gateway");
         assertThat(admin.get("/api/v1/admin/accounts/" + UUID.randomUUID()).status()).isEqualTo(404);
     }
@@ -198,9 +198,9 @@ class AdminTest extends IntegrationTest {
         assertThat(admin.patch("/api/v1/admin/plans/anual", Map.of("price_cents", 7900)).status()).isEqualTo(404);
 
         Api novo = registered();
-        assertThat(antigo.get("/api/v1/subscription").json().path("price_cents").asInt()).isEqualTo(5900);
+        assertThat(antigo.get("/api/v1/subscription").json().path("price_cents").asInt()).isEqualTo(2499);
         assertThat(novo.get("/api/v1/subscription").json().path("price_cents").asInt()).isEqualTo(7900);
         assertThat(jdbc.queryForObject("SELECT meta->>'from' FROM audit_log WHERE action = 'plan.price_change'", String.class))
-                .isEqualTo("5900");
+                .isEqualTo("2499");
     }
 }
