@@ -57,6 +57,7 @@ export function PayChargeModal({ charge, onClose }: { charge: Charge | null; onC
             <div className="col-span-2">
               <dt className="font-mono text-[11px] tracking-widest text-muted uppercase">Cliente</dt>
               <dd className="font-bold">{charge.client_name}</dd>
+              {charge.kind === "one_off" && <dd className="text-sm text-muted">Avulsa · {charge.description}</dd>}
             </div>
             <div>
               <dt className="font-mono text-[11px] tracking-widest text-muted uppercase">Vencimento</dt>

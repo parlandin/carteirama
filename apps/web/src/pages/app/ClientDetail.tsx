@@ -1,8 +1,10 @@
-import { Archive, Check, Mail, NotebookPen, Pencil, ReceiptText, Undo2, UserRound } from "lucide-react";
+import { Archive, Check, Mail, NotebookPen, Pencil, Plus, ReceiptText, Undo2, UserRound } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import { CancelChargeModal } from "../../components/CancelChargeModal";
+import { OneOffChargeModal } from "../../components/OneOffChargeModal";
 import { PayChargeModal } from "../../components/PayChargeModal";
-import { Button, Card, ErrorState, LinkButton, Loading, Modal, PageHeader, StatusPill, GroupChip } from "../../components/ui";
+import { Button, Card, ErrorState, LinkButton, Loading, Modal, PageHeader, Pill, StatusPill, GroupChip } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { isReadOnly, useMe } from "../../lib/auth";
 import { currentMonth, date, formatDocument, formatPhone, instantDay, monthLabel, money, shortDate } from "../../lib/format";
@@ -42,6 +44,8 @@ export default function ClientDetail() {
   const readOnly = isReadOnly(me);
   const { data, isLoading, error, refetch } = useClient(id);
   const [paying, setPaying] = useState<Charge | null>(null);
+  const [cancelling, setCancelling] = useState<Charge | null>(null);
+  const [creating, setCreating] = useState(false);
   const [unpaying, setUnpaying] = useState<string | null>(null);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -170,6 +174,13 @@ export default function ClientDetail() {
               <h2 className="text-xl font-bold">Últimas cobranças</h2>
               <GroupChip name={client.group_name} color={client.group_color} />
             </div>
+            {client.status === "active" && (
+              <div className="border-b-2 border-navy px-5 py-3 sm:px-6">
+                <Button size="sm" variant="ghost" icon={Plus} disabled={readOnly} onClick={() => setCreating(true)} className="-ml-2 text-blue">
+                  Nova cobrança avulsa
+                </Button>
+              </div>
+            )}
             {charges.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-6 py-10 text-center text-muted">
                 <ReceiptText className="size-6" />
@@ -180,7 +191,17 @@ export default function ClientDetail() {
                 {charges.slice(0, 12).map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-3 border-b-2 border-navy px-5 py-3.5 last:border-b-0 sm:px-6">
                     <div className="min-w-0">
-                      <p className="font-bold">{monthLabel(c.reference_month.slice(0, 7))}</p>
+                      {c.kind === "one_off" ? (
+                        <>
+                          <p className="truncate font-bold">{c.description}</p>
+                          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+                            <Pill tone="blue" className="py-0.5">Avulsa</Pill>
+                            {monthLabel(c.reference_month.slice(0, 7))}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="font-bold">{monthLabel(c.reference_month.slice(0, 7))}</p>
+                      )}
                       <p className="font-mono text-xs text-muted">
                         {c.status === "paid" ? `pago em ${shortDate(c.paid_at)}` : `vence ${shortDate(c.due_date)}`} · {money(c.amount_cents)}
                       </p>
@@ -188,9 +209,16 @@ export default function ClientDetail() {
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
                       <StatusPill kind="charge" status={c.display_status} />
                       {!readOnly && (c.status === "pending" ? (
-                        <button type="button" className="text-xs font-bold text-blue hover:underline" onClick={() => setPaying(c)}>
-                          Marcar pago
-                        </button>
+                        <span className="flex items-center gap-3">
+                          {c.kind === "one_off" && (
+                            <button type="button" className="text-xs font-semibold text-muted hover:text-red" onClick={() => setCancelling(c)}>
+                              Cancelar
+                            </button>
+                          )}
+                          <button type="button" className="text-xs font-bold text-blue hover:underline" onClick={() => setPaying(c)}>
+                            Marcar pago
+                          </button>
+                        </span>
                       ) : c.status === "paid" ? (
                         <button type="button" disabled={unpaying === c.id} className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink" onClick={() => unpay(c)}>
                           <Undo2 className="size-3" /> Desfazer
@@ -206,6 +234,8 @@ export default function ClientDetail() {
       </div>
 
       <PayChargeModal charge={paying} onClose={() => setPaying(null)} />
+      <CancelChargeModal charge={cancelling} onClose={() => setCancelling(null)} />
+      <OneOffChargeModal open={creating} onClose={() => setCreating(false)} client={{ id: client.id, name: client.name }} />
       <Modal
         open={confirmArchive}
         onClose={() => setConfirmArchive(false)}

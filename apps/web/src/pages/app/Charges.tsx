@@ -1,8 +1,10 @@
-import { Check, Clock, ReceiptText, TriangleAlert, Undo2 } from "lucide-react";
+import { Check, Clock, Plus, ReceiptText, TriangleAlert, Undo2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
+import { CancelChargeModal } from "../../components/CancelChargeModal";
+import { OneOffChargeModal } from "../../components/OneOffChargeModal";
 import { PayChargeModal } from "../../components/PayChargeModal";
-import { Button, Card, EmptyState, ErrorState, GroupChip, Loading, MonthPicker, PageHeader, StatusPill, TableHead, TotalBar } from "../../components/ui";
+import { Button, Card, EmptyState, ErrorState, GroupChip, Loading, MonthPicker, PageHeader, Pill, StatusPill, TableHead, TotalBar } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { isReadOnly, useMe } from "../../lib/auth";
 import { cx } from "../../lib/cx";
@@ -23,6 +25,8 @@ export default function Charges() {
   useAutoGenerateCharges(!readOnly);
   const [filter, setFilter] = useState<Filter>("all");
   const [paying, setPaying] = useState<Charge | null>(null);
+  const [cancelling, setCancelling] = useState<Charge | null>(null);
+  const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -78,7 +82,14 @@ export default function Charges() {
         eyebrow={`// Cobranças · ${monthShort(month)}`}
         title="Cobranças do mês"
         subtitle="Quem já pagou, quem vence nos próximos dias e quem está em atraso."
-        actions={<MonthPicker month={month} onChange={shift} className="w-full sm:w-auto" />}
+        actions={
+          <>
+            <MonthPicker month={month} onChange={shift} className="w-full sm:w-auto" />
+            <Button variant="primary" icon={Plus} disabled={readOnly} onClick={() => setCreating(true)} className="w-full sm:w-auto">
+              Cobrança avulsa
+            </Button>
+          </>
+        }
       />
 
       {summary && (
@@ -124,7 +135,7 @@ export default function Charges() {
               <EmptyState
                 icon={ReceiptText}
                 title={`Nenhuma cobrança em ${monthLabel(month).toLowerCase()}`}
-                description="As cobranças são criadas a partir dos clientes ativos, com o valor e o dia de vencimento de cada um."
+                description="As mensalidades são criadas a partir dos clientes ativos, com o valor e o dia de vencimento de cada um. Cobranças avulsas você cria pelo botão acima."
                 action={
                   <Button variant="primary" loading={generating} disabled={readOnly} onClick={generate}>
                     Gerar cobranças de {monthLabel(month)}
@@ -136,7 +147,7 @@ export default function Charges() {
             )
           ) : (
             <>
-              <TableHead className="grid-cols-[1.5fr_1.2fr_110px_120px_120px_170px] gap-5">
+              <TableHead className="grid-cols-[1.5fr_1.2fr_110px_120px_120px_210px] gap-5">
                 <span>Cliente</span>
                 <span>Grupo</span>
                 <span>Vence em</span>
@@ -149,19 +160,32 @@ export default function Charges() {
                   const g = groupById.get(c.group_id);
                   const action =
                     readOnly ? null : c.status === "pending" ? (
-                      <Button size="sm" onClick={() => setPaying(c)} className="w-full md:w-auto">
-                        Marcar como pago
-                      </Button>
+                      <span className="flex items-center justify-end gap-1">
+                        <Button size="sm" onClick={() => setPaying(c)} className="md:w-auto">
+                          Marcar como pago
+                        </Button>
+                        {c.kind === "one_off" && (
+                          <Button size="sm" variant="ghost" icon={X} onClick={() => setCancelling(c)} className="px-2 text-muted" aria-label={`Cancelar cobrança avulsa ${c.description}`} title="Cancelar cobrança avulsa" />
+                        )}
+                      </span>
                     ) : c.status === "paid" ? (
                       <Button size="sm" variant="ghost" icon={Undo2} loading={busyId === c.id} onClick={() => unpay(c)} className="text-muted">
                         Desfazer
                       </Button>
                     ) : null;
                   return (
-                    <li key={c.id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2.5 border-b-2 border-navy px-4 py-4 last:border-b-0 sm:px-6 md:grid-cols-[1.5fr_1.2fr_110px_120px_120px_170px] md:gap-5 md:py-3.5">
-                      <Link to={`/app/clientes/${c.client_id}`} className="min-w-0 font-bold hover:underline">
-                        {c.client_name}
-                      </Link>
+                    <li key={c.id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2.5 border-b-2 border-navy px-4 py-4 last:border-b-0 sm:px-6 md:grid-cols-[1.5fr_1.2fr_110px_120px_120px_210px] md:gap-5 md:py-3.5">
+                      <span className="min-w-0">
+                        <Link to={`/app/clientes/${c.client_id}`} className="font-bold hover:underline">
+                          {c.client_name}
+                        </Link>
+                        {c.kind === "one_off" && (
+                          <span className="mt-1 flex min-w-0 items-center gap-1.5">
+                            <Pill tone="blue">Avulsa</Pill>
+                            <span className="truncate text-sm text-muted">{c.description}</span>
+                          </span>
+                        )}
+                      </span>
                       <span className="hidden min-w-0 md:block">{g && <GroupChip name={g.name} color={g.color} />}</span>
                       <span className="hidden font-mono text-sm md:block">{date(c.due_date)}</span>
                       <span className="tabular text-right text-lg font-extrabold">{money(c.amount_cents)}</span>
@@ -181,6 +205,8 @@ export default function Charges() {
       )}
 
       <PayChargeModal charge={paying} onClose={() => setPaying(null)} />
+      <CancelChargeModal charge={cancelling} onClose={() => setCancelling(null)} />
+      <OneOffChargeModal open={creating} onClose={() => setCreating(false)} month={month} />
     </>
   );
 }

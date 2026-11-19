@@ -87,7 +87,7 @@ export default function Export() {
             <Button variant="primary" size="lg" icon={Download} loading={busy} disabled={types.size === 0} onClick={run}>
               Baixar planilha
             </Button>
-            <p className="text-sm text-muted">{types.size > 1 ? "Tudo numa tabela só: uma linha por cliente, com as colunas de cada item marcado." : "Uma tabela com os dados marcados."} Os valores saem em reais, sem símbolo.</p>
+            <p className="text-sm text-muted">{types.size > 1 ? "Tudo numa tabela só: uma linha por cliente (ou por cobrança, quando ele tem mais de uma no mês), com as colunas de cada item marcado." : "Uma tabela com os dados marcados."} Os valores saem em reais, sem símbolo.</p>
           </div>
         </div>
       </Card>

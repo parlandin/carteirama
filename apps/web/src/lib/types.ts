@@ -91,7 +91,12 @@ export interface Charge {
   display_status: ChargeDisplayStatus;
   paid_at: string | null;
   note: string | null;
+  /** recurring: a mensalidade do mês; one_off: cobrança avulsa, com descrição. */
+  kind: ChargeKind;
+  description: string | null;
 }
+
+export type ChargeKind = "recurring" | "one_off";
 
 export interface ClientDetail {
   client: Client;
