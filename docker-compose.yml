@@ -34,5 +34,20 @@ services:
       timeout: 5s
       retries: 5
 
+  databasus:
+    image: databasus/databasus:v3.70.1
+    volumes:
+      - databasus-data:/databasus-data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "databasus", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
 volumes:
   pgdata:
+  databasus-data:

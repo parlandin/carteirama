@@ -22,3 +22,8 @@ services:
 
   db:
     restart: unless-stopped
+
+  databasus:
+    ports:
+      - "127.0.0.1:${DATABASUS_PORT:-4005}:4005"
+    restart: unless-stopped

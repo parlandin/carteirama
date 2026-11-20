@@ -44,5 +44,9 @@ services:
     depends_on:
       - db
 
+  databasus:
+    ports:
+      - "${DATABASUS_PORT:-4005}:4005"
+
 volumes:
   m2:

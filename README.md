@@ -13,7 +13,7 @@ carteirama/
 │   └── nginx/conf.d/
 │       ├── default.dev.conf  # / → Vite (HMR), /api → api
 │       └── default.prod.conf # / → build estático, /api → api
-├── docker-compose.yml        # base: api + db
+├── docker-compose.yml        # base: api + db + databasus
 ├── docker-compose.dev.yml    # dev: nginx, web (Vite), api com volume, adminer
 ├── docker-compose.prod.yml   # prod: web (Nginx + build), restart, limites
 ├── .env.example
@@ -45,9 +45,20 @@ Em dev:
 
 - App: http://localhost:8080
 - Adminer: http://localhost:8081 (servidor `db`)
+- Databasus (backups do Postgres): http://localhost:4005
 - Postgres: `localhost:5432`
 - A API roda com `mvn spring-boot:run` e devtools: recompile na IDE (o `target/` é montado no container) para reiniciar.
 - Depois de mudar dependências do front, rode `make dev-build`: o `node_modules` do container fica num volume anônimo, que só `--renew-anon-volumes` recria (`--build` sozinho mantém o antigo).
+
+## Backups (Databasus)
+
+O [Databasus](https://github.com/databasus/databasus) faz os backups agendados do Postgres. Ele sobe junto com o resto (`make dev` ou `make prod`) e guarda a configuração no volume `databasus-data`.
+
+1. Abra http://localhost:4005 e crie a conta: a primeira conta vira administradora.
+2. Em **New Database**, conecte no Postgres com host `db`, porta `5432` e o banco, usuário e senha do `.env`.
+3. Escolha o agendamento, o destino (disco local, S3, R2, SFTP…) e a retenção.
+
+Em prod a porta só escuta em `127.0.0.1`. Acesse por um túnel SSH (`ssh -L 4005:localhost:4005 servidor`). Prefira um destino fora do servidor e guarde também a chave de criptografia do Databasus, sem ela os backups não podem ser restaurados.
 
 ## Migrations
 
