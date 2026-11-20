@@ -50,6 +50,28 @@ Em dev:
 - A API roda com `mvn spring-boot:run` e devtools: recompile na IDE (o `target/` é montado no container) para reiniciar.
 - Depois de mudar dependências do front, rode `make dev-build`: o `node_modules` do container fica num volume anônimo, que só `--renew-anon-volumes` recria (`--build` sozinho mantém o antigo).
 
+## Pagamentos (gateway)
+
+A cobrança da assinatura passa pela interface `PaymentGateway`. Cada gateway é um provider isolado em `apps/api/src/main/java/com/parlandim/carteirama/billing/provider/<nome>/`, ligado só quando `PAYMENT_PROVIDER=<nome>`. Com `PAYMENT_PROVIDER=none` (padrão), nenhum gateway fica ativo e o pagamento retorna "Gateway de pagamento não configurado".
+
+Para trocar de gateway, mude `PAYMENT_PROVIDER`. Para remover um, apague a pasta do provider. Para adicionar outro, crie uma pasta nova com uma classe `@Configuration` + `@ConditionalOnProperty(name = "carteirama.payment.provider", havingValue = "<nome>")` que registre um `PaymentGateway` `@Primary`.
+
+### AbacatePay (Pix)
+
+O pagamento é feito por Pix dentro da própria Carteirama: a tela de assinatura mostra o QR code e o copia e cola, e a fatura vira paga sozinha quando o webhook chega.
+
+1. No dashboard da AbacatePay, crie uma chave de API com as permissões `TRANSPARENT:CREATE` e `TRANSPARENT:READ` (use o Modo Teste para testar).
+2. Gere um segredo: `openssl rand -hex 32`.
+3. Cadastre um webhook v2 com o evento `transparent.completed`, a URL `https://SEU_DOMINIO/api/v1/webhooks/gateway` e esse segredo.
+4. No `.env`: `PAYMENT_PROVIDER=abacatepay`, `ABACATEPAY_API_KEY`, `ABACATEPAY_WEBHOOK_SECRET` e `FRONTEND_URL` com o endereço público.
+
+Como funciona:
+
+- **Assinar agora** gera a fatura (vencendo no fim do teste) e abre o Pix.
+- Todo dia às 03:30 a API gera a fatura do mês 5 dias antes do vencimento e encerra as assinaturas com cancelamento agendado.
+- O webhook é aceito só com o segredo certo, e o pagamento é conferido na API da AbacatePay antes de dar baixa.
+- Cada QR code vale 1 hora. Enquanto estiver válido, é reaproveitado.
+
 ## Backups (Databasus)
 
 O [Databasus](https://github.com/databasus/databasus) faz os backups agendados do Postgres. Ele sobe junto com o resto (`make dev` ou `make prod`) e guarda a configuração no volume `databasus-data`.
