@@ -116,8 +116,24 @@ class SubscriptionTest extends IntegrationTest {
         assertThat(cancel.status()).isEqualTo(200);
         assertThat(cancel.json().path("cancel_at_period_end").asBoolean()).isTrue();
 
+        assertThat(s.api().post("/api/v1/subscription/invoices/" + invoiceId + "/payment-link").code())
+                .isEqualTo("subscription_cancel_scheduled");
+        assertThat(s.api().post("/api/v1/subscription/checkout").code()).isEqualTo("subscription_cancel_scheduled");
+
+        var resumed = s.api().post("/api/v1/subscription/resume");
+        assertThat(resumed.status()).isEqualTo(200);
+        assertThat(resumed.json().path("cancel_at_period_end").asBoolean()).isFalse();
+        assertThat(s.api().post("/api/v1/subscription/invoices/" + invoiceId + "/payment-link").status()).isEqualTo(200);
+        assertThat(s.api().post("/api/v1/subscription/cancel").json().path("cancel_at_period_end").asBoolean()).isTrue();
+
         webhook(FakePaymentGateway.SIGNATURE, event("evt_c", "subscription.cancelled", s, null));
         assertThat(s.api().get("/api/v1/me").json().path("account").path("status").asString()).isEqualTo("cancelled");
         assertThat(s.api().post("/api/v1/subscription/cancel").code()).isEqualTo("invalid_account_state");
+        assertThat(s.api().post("/api/v1/subscription/resume").code()).isEqualTo("invalid_account_state");
+        assertThat(s.api().get("/api/v1/subscription/invoices").json().path("data").get(0).path("status").asString())
+                .isEqualTo("cancelled");
+        assertThat(s.api().post("/api/v1/subscription/invoices/" + invoiceId + "/payment-link").code())
+                .isEqualTo("invoice_not_payable");
+        assertThat(s.api().post("/api/v1/subscription/checkout").code()).isEqualTo("subscription_cancelled");
     }
 }

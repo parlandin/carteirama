@@ -44,6 +44,10 @@ public class FakePaymentGateway implements PaymentGateway {
     }
 
     @Override
+    public void resume(Subscription subscription) {
+    }
+
+    @Override
     public GatewayEvent parseWebhook(Map<String, String> headers, String body) {
         if (!SIGNATURE.equals(headers.get("x-test-signature"))) {
             throw new InvalidWebhookSignatureException();

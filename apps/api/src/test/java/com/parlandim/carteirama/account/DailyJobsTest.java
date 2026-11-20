@@ -58,9 +58,14 @@ class DailyJobsTest extends IntegrationTest {
         invoice(atrasada, "current_date - 5", "pending");
         invoice(recente, "current_date - 4", "pending");
         invoice(paga, "current_date - 30", "paid");
+        UUID cancelando = accountIdOf(registered());
+        setAccountStatus(cancelando, "active");
+        invoice(cancelando, "current_date - 10", "pending");
+        jdbc.update("UPDATE subscriptions SET cancel_at_period_end = true WHERE account_id = ?", cancelando);
 
         jobs.suspendOverdueAccounts();
 
+        assertThat(statusOf(cancelando)).isEqualTo("active");
         assertThat(statusOf(atrasada)).isEqualTo("suspended");
         assertThat(statusOf(recente)).isEqualTo("active");
         assertThat(statusOf(paga)).isEqualTo("active");
@@ -71,6 +76,9 @@ class DailyJobsTest extends IntegrationTest {
         UUID a = accountIdOf(registered());
         invoice(a, "(now() AT TIME ZONE 'America/Sao_Paulo')::date + 3", "pending");
         invoice(a, "(now() AT TIME ZONE 'America/Sao_Paulo')::date + 4", "pending");
+        UUID cancelando = accountIdOf(registered());
+        invoice(cancelando, "(now() AT TIME ZONE 'America/Sao_Paulo')::date + 3", "pending");
+        jdbc.update("UPDATE subscriptions SET cancel_at_period_end = true WHERE account_id = ?", cancelando);
 
         jobs.sendDueReminders();
 
