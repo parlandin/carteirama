@@ -51,6 +51,7 @@ class AbacatePayGatewayTest extends IntegrationTest {
     private final List<String> created = new ArrayList<>();
     private final List<String> checked = new ArrayList<>();
     private volatile String checkStatus = "PAID";
+    private volatile boolean rejectCustomer = false;
     private AbacatePayPaymentGateway gateway;
     private AbacatePayBillingJobs jobs;
     private TransactionTemplate tx;
@@ -60,7 +61,14 @@ class AbacatePayGatewayTest extends IntegrationTest {
     void start() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/transparents/create", ex -> {
-            created.add(new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            String request = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (rejectCustomer && request.contains("\"customer\"")) {
+                reply(ex, 422, """
+                        {"data":null,"success":false,"error":"Invalid customer"}
+                        """);
+                return;
+            }
+            created.add(request);
             int n = created.size();
             reply(ex, """
                     {"data":{"id":"pix_char_%d","amount":2499,"status":"PENDING","devMode":true,"brCode":"000201pix%d",
@@ -94,9 +102,13 @@ class AbacatePayGatewayTest extends IntegrationTest {
     }
 
     private static void reply(HttpExchange ex, String body) throws IOException {
+        reply(ex, 200, body);
+    }
+
+    private static void reply(HttpExchange ex, int status, String body) throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         ex.getResponseHeaders().add("Content-Type", "application/json");
-        ex.sendResponseHeaders(200, bytes.length);
+        ex.sendResponseHeaders(status, bytes.length);
         ex.getResponseBody().write(bytes);
         ex.close();
     }
@@ -178,6 +190,57 @@ class AbacatePayGatewayTest extends IntegrationTest {
                 .containsEntry("next_due_date", java.sql.Date.valueOf(trialEnd.plusMonths(1)));
         assertThat(jdbc.queryForObject("SELECT status FROM abacatepay_pix_charges WHERE id = 'pix_char_1'", String.class))
                 .isEqualTo("PAID");
+    }
+
+    @Test
+    void pixIdentificaOClienteEOVencimento() {
+        UUID accountId = accountIdOf(registered());
+        checkout(accountId);
+        UUID invoiceId = onlyInvoice(accountId);
+        var invoice = jdbc.queryForMap("SELECT number, due_date FROM invoices WHERE id = ?", invoiceId);
+        String due = ((java.sql.Date) invoice.get("due_date")).toLocalDate()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        String document = jdbc.queryForObject("SELECT document FROM accounts WHERE id = ?", String.class, accountId);
+
+        paymentLink(invoiceId);
+
+        String body = created.getFirst();
+        assertThat(body).contains(
+                "\"description\":\"Carteirama - Fulano de Tal - venc. " + due + " - fatura " + invoice.get("number") + "\"",
+                "\"externalId\":\"fulano-de-tal-" + due.replace('/', '-') + "-",
+                "\"customer\":{",
+                "\"name\":\"Fulano de Tal\"",
+                "\"taxId\":\"" + document + "\"",
+                "\"cellphone\":\"11988887777\"",
+                "\"account_id\":\"" + accountId + "\"");
+    }
+
+    @Test
+    void pixSaiSemPagadorQuandoAbacatePayRecusaOsDados() {
+        UUID accountId = accountIdOf(registered());
+        checkout(accountId);
+        rejectCustomer = true;
+
+        var link = paymentLink(onlyInvoice(accountId));
+
+        assertThat(link.pixCode()).isEqualTo("000201pix1");
+        assertThat(created).hasSize(1);
+        assertThat(created.getFirst()).doesNotContain("\"customer\"").contains("Fulano de Tal");
+    }
+
+    @Test
+    void rotulosDoPixRespeitamOsLimites() {
+        String longName = "Construtora & Incorporadora São João dos Campos Reunidos Ltda 🚀 ".repeat(4);
+        String description = PixLabels.description(longName, LocalDate.of(2026, 10, 20), "CRT-000123");
+
+        assertThat(description).hasSizeLessThanOrEqualTo(PixLabels.DESCRIPTION_MAX)
+                .startsWith("Carteirama - Construtora & Incorporadora São João")
+                .endsWith(" - venc. 20/10/2026 - fatura CRT-000123")
+                .doesNotContain("🚀");
+        assertThat(PixLabels.externalId("João da Silva", LocalDate.of(2026, 10, 20), Instant.ofEpochMilli(36)))
+                .isEqualTo("joao-da-silva-20-10-2026-10");
+        assertThat(PixLabels.slug("🚀")).isEqualTo("cliente");
+        assertThat(PixLabels.slug(longName)).hasSizeLessThanOrEqualTo(40).doesNotEndWith("-");
     }
 
     @Test

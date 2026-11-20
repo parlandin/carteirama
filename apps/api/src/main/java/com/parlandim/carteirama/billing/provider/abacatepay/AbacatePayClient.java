@@ -26,6 +26,15 @@ public class AbacatePayClient {
     public record Pix(String id, String status, String brCode, Instant expiresAt) {
     }
 
+    public record Customer(String name, String email, String taxId, String cellphone) {
+    }
+
+    private static final class CustomerRejectedException extends RuntimeException {
+        CustomerRejectedException(String message) {
+            super(message, null, false, false);
+        }
+    }
+
     private final RestClient http;
     private final JsonMapper json = JsonMapper.builder().build();
 
@@ -42,20 +51,47 @@ public class AbacatePayClient {
     }
 
     public Pix createPix(int amountCents, Duration expiresIn, String description, String externalId,
-                         Map<String, String> metadata) {
+                         Map<String, String> metadata, Customer customer) {
+        if (customer != null) {
+            try {
+                return requestPix(amountCents, expiresIn, description, externalId, metadata, customer);
+            } catch (CustomerRejectedException e) {
+                log.warn("AbacatePay recusou os dados do pagador ({}); criando o Pix sem eles", e.getMessage());
+            }
+        }
+        return requestPix(amountCents, expiresIn, description, externalId, metadata, null);
+    }
+
+    private Pix requestPix(int amountCents, Duration expiresIn, String description, String externalId,
+                           Map<String, String> metadata, Customer customer) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("amount", amountCents);
         data.put("expiresIn", expiresIn.toSeconds());
         data.put("description", description);
         data.put("externalId", externalId);
         data.put("metadata", metadata);
+        if (customer != null) {
+            data.put("customer", Map.of("name", customer.name(), "email", customer.email(),
+                    "taxId", customer.taxId(), "cellphone", customer.cellphone()));
+        }
         String body = json.writeValueAsString(Map.of("method", "PIX", "data", data));
-        JsonNode pix = call("criar o Pix", () -> http.post()
+        Supplier<String> request = () -> http.post()
                 .uri("/transparents/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
-                .body(String.class));
+                .body(String.class);
+        JsonNode pix = call("criar o Pix", customer == null ? request : () -> {
+            try {
+                return request.get();
+            } catch (RestClientResponseException e) {
+                if (e.getStatusCode().value() == 400 || e.getStatusCode().value() == 422) {
+                    throw new CustomerRejectedException("HTTP " + e.getStatusCode().value() + " "
+                            + e.getResponseBodyAsString());
+                }
+                throw e;
+            }
+        });
         return new Pix(pix.path("id").asString(), pix.path("status").asString(), pix.path("brCode").asString(),
                 Instant.parse(pix.path("expiresAt").asString()));
     }

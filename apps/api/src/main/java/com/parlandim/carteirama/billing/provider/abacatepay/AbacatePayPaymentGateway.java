@@ -82,10 +82,14 @@ public class AbacatePayPaymentGateway implements PaymentGateway {
     public PaymentLink paymentLink(Invoice invoice) {
         String brCode = pixStore.reusableBrCode(invoice.getId(), invoice.getAmountCents(),
                 clock.now().plus(MIN_PIX_VALIDITY)).orElseGet(() -> {
+            Account account = invoice.getAccount();
+            String payer = PixLabels.payerName(account);
             AbacatePayClient.Pix pix = client.createPix(invoice.getAmountCents(), properties.pixExpiresIn(),
-                    "Carteirama - fatura " + invoice.getNumber(),
-                    invoice.getId() + "-" + clock.now().toEpochMilli(),
-                    Map.of("invoice_id", invoice.getId().toString(), "invoice_number", invoice.getNumber()));
+                    PixLabels.description(payer, invoice.getDueDate(), invoice.getNumber()),
+                    PixLabels.externalId(payer, invoice.getDueDate(), clock.now()),
+                    Map.of("invoice_id", invoice.getId().toString(), "invoice_number", invoice.getNumber(),
+                            "account_id", account.getId().toString()),
+                    PixLabels.customer(account, payer));
             pixStore.save(invoice.getId(), invoice.getAmountCents(), pix);
             return pix.brCode();
         });
