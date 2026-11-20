@@ -46,9 +46,7 @@ public class SubscriptionService {
     @Transactional
     public String checkout(UUID accountId) {
         Subscription subscription = find(accountId);
-        if (subscription.getStatus() == SubscriptionStatus.cancelled) {
-            throw ApiException.conflict("invalid_account_state", "A assinatura está cancelada.");
-        }
+        requirePayable(subscription);
         return gateway.createCheckout(subscription.getAccount(), subscription);
     }
 
@@ -58,6 +56,7 @@ public class SubscriptionService {
         if (invoice.getStatus() != InvoiceStatus.pending) {
             throw ApiException.conflict("invoice_not_payable", "Esta fatura não está em aberto.");
         }
+        requirePayable(find(accountId));
         return gateway.paymentLink(invoice);
     }
 
@@ -72,6 +71,29 @@ public class SubscriptionService {
             subscription.setCancelAtPeriodEnd(true);
         }
         return toResponse(subscription, accountId);
+    }
+
+    @Transactional
+    public SubscriptionResponse resume(UUID accountId) {
+        Subscription subscription = find(accountId);
+        if (subscription.getStatus() == SubscriptionStatus.cancelled) {
+            throw ApiException.conflict("invalid_account_state", "A assinatura já está cancelada.");
+        }
+        if (subscription.isCancelAtPeriodEnd()) {
+            gateway.resume(subscription);
+            subscription.setCancelAtPeriodEnd(false);
+        }
+        return toResponse(subscription, accountId);
+    }
+
+    private static void requirePayable(Subscription subscription) {
+        if (subscription.getStatus() == SubscriptionStatus.cancelled) {
+            throw ApiException.conflict("subscription_cancelled", "A assinatura está cancelada.");
+        }
+        if (subscription.isCancelAtPeriodEnd()) {
+            throw ApiException.conflict("subscription_cancel_scheduled",
+                    "O cancelamento da assinatura está agendado. Mantenha a assinatura para voltar a pagar.");
+        }
     }
 
     private Subscription find(UUID accountId) {

@@ -49,6 +49,11 @@ public class SubscriptionController {
         return subscriptionService.paymentLink(user.requireAccountId(), id);
     }
 
+    @PostMapping("/resume")
+    public SubscriptionResponse resume(@AuthenticationPrincipal AuthUser user) {
+        return subscriptionService.resume(user.requireAccountId());
+    }
+
     @PostMapping("/cancel")
     public SubscriptionResponse cancel(@AuthenticationPrincipal AuthUser user) {
         return subscriptionService.cancel(user.requireAccountId());

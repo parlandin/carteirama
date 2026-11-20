@@ -14,6 +14,8 @@ public interface PaymentGateway {
 
     void cancelAtPeriodEnd(Subscription subscription);
 
+    void resume(Subscription subscription);
+
     GatewayEvent parseWebhook(Map<String, String> headers, String body);
 
     record PaymentLink(String pixCode, String boletoUrl, String cardUrl) {

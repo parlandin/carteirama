@@ -27,6 +27,10 @@ public class UnconfiguredPaymentGateway implements PaymentGateway {
     }
 
     @Override
+    public void resume(Subscription subscription) {
+    }
+
+    @Override
     public GatewayEvent parseWebhook(Map<String, String> headers, String body) {
         throw new InvalidWebhookSignatureException();
     }

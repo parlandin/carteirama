@@ -5,6 +5,7 @@ import com.parlandim.carteirama.common.time.BusinessClock;
 import com.parlandim.carteirama.model.Invoice;
 import com.parlandim.carteirama.model.enums.AccountStatus;
 import com.parlandim.carteirama.model.enums.InvoiceStatus;
+import com.parlandim.carteirama.model.enums.SubscriptionStatus;
 import com.parlandim.carteirama.repository.AccountRepository;
 import com.parlandim.carteirama.repository.InvoiceRepository;
 import com.parlandim.carteirama.repository.PasswordResetRepository;
@@ -48,12 +49,13 @@ public class DailyJobs {
 
     public void suspendOverdueAccounts() {
         LocalDate cutoff = clock.today().minusDays(properties.suspendAfterDays());
-        List<UUID> ids = invoices.findAccountIdsWithOverdueInvoices(AccountStatus.active, InvoiceStatus.pending, cutoff);
+        List<UUID> ids = invoices.findAccountIdsWithOverduePayableInvoices(AccountStatus.active, InvoiceStatus.pending,
+                cutoff, SubscriptionStatus.cancelled);
         forEach("suspender por fatura vencida", ids, id -> maintenance.autoSuspend(id, "invoice_overdue"));
     }
 
     public void sendDueReminders() {
-        List<Invoice> due = invoices.findAllByStatusAndDueDate(InvoiceStatus.pending, clock.today().plusDays(3));
+        List<Invoice> due = invoices.findPayableDueOn(clock.today().plusDays(3));
         for (Invoice invoice : due) {
             try {
                 maintenance.sendDueReminder(invoice);

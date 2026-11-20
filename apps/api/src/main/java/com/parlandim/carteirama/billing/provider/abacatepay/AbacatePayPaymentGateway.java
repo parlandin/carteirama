@@ -97,6 +97,10 @@ public class AbacatePayPaymentGateway implements PaymentGateway {
     }
 
     @Override
+    public void resume(Subscription subscription) {
+    }
+
+    @Override
     public GatewayEvent parseWebhook(Map<String, String> headers, String body) {
         if (!validSecret(headers.get("x-webhook-secret"))) {
             throw new InvalidWebhookSignatureException();

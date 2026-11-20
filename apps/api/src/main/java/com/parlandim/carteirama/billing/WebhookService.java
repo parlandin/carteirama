@@ -67,6 +67,7 @@ public class WebhookService {
             case SUBSCRIPTION_CANCELLED -> {
                 subscription.setStatus(SubscriptionStatus.cancelled);
                 accountState.cancel(account);
+                invoices.cancelPendingByAccount(account.getId(), InvoiceStatus.pending, InvoiceStatus.cancelled);
             }
             case IGNORED -> {
             }
