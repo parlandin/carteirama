@@ -68,6 +68,29 @@ class ClientTest extends IntegrationTest {
     }
 
     @Test
+    void cpfOuCnpjEOpcional() {
+        Api api = registered();
+        String g = group(api, "G");
+
+        var semDocumento = api.post("/api/v1/clients", client(g, "Sem Documento"));
+        assertThat(semDocumento.status()).isEqualTo(201);
+        assertThat(semDocumento.json().path("document").isNull()).isTrue();
+
+        Map<String, Object> vazio = client(g, "Documento Vazio");
+        vazio.put("document", "  ");
+        var criadoVazio = api.post("/api/v1/clients", vazio);
+        assertThat(criadoVazio.status()).isEqualTo(201);
+        assertThat(criadoVazio.json().path("document").isNull()).isTrue();
+
+        Map<String, Object> comDocumento = client(g, "Com Documento");
+        comDocumento.put("document", Fixtures.cpf());
+        String id = api.post("/api/v1/clients", comDocumento).json().path("id").asString();
+        var limpo = api.patch("/api/v1/clients/" + id, Api.body("document", null));
+        assertThat(limpo.status()).isEqualTo(200);
+        assertThat(limpo.json().path("document").isNull()).isTrue();
+    }
+
+    @Test
     void validacoes() {
         Api api = registered();
         String g = group(api, "G");
