@@ -21,6 +21,8 @@ CMD ["yarn", "dev"]
 # Build
 FROM deps AS build
 
+ARG VITE_API_URL=
+
 COPY apps/web/ .
 
 RUN yarn build
