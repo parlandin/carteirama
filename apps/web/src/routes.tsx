@@ -4,6 +4,8 @@ import { AdminLayout, AppLayout, GuestOnly } from "./layouts/AppLayout";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import Account from "./pages/app/Account";
+import ChargeDetail from "./pages/app/ChargeDetail";
+import ChargeForm from "./pages/app/ChargeForm";
 import Charges from "./pages/app/Charges";
 import ClientDetail from "./pages/app/ClientDetail";
 import ClientForm from "./pages/app/ClientForm";
@@ -45,6 +47,9 @@ const router = createBrowserRouter([
       { path: "clientes/:id", element: <ClientDetail /> },
       { path: "clientes/:id/editar", element: <ClientForm /> },
       { path: "cobrancas", element: <Charges /> },
+      { path: "cobrancas/nova", element: <ChargeForm /> },
+      { path: "cobrancas/:id", element: <ChargeDetail /> },
+      { path: "cobrancas/:id/editar", element: <ChargeForm /> },
       { path: "exportar", element: <Export /> },
       { path: "assinatura", element: <Subscription /> },
       { path: "assinatura/faturas/:id", lazy: page(() => import("./pages/app/InvoicePayment")) },

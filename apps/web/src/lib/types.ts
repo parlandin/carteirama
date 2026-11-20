@@ -81,9 +81,11 @@ export interface Client {
 
 export interface Charge {
   id: string;
-  client_id: string;
+  client_id: string | null;
   client_name: string;
-  group_id: string;
+  group_id: string | null;
+  group_name: string | null;
+  group_color: string | null;
   reference_month: string;
   amount_cents: number;
   due_date: string;

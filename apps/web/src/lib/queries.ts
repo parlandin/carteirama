@@ -27,6 +27,7 @@ export const keys = {
   clients: (params: object) => ["clients", params] as const,
   client: (id: string) => ["client", id] as const,
   charges: (params: object) => ["charges", params] as const,
+  charge: (id: string) => ["charge", id] as const,
   summary: (month: string) => ["summary", month] as const,
   subscription: ["subscription"] as const,
   invoices: ["invoices"] as const,
@@ -36,7 +37,7 @@ export function useInvalidateData() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      ["groups", "group", "clients", "client", "charges", "summary", "subscription"].map((k) =>
+      ["groups", "group", "clients", "client", "charges", "charge", "summary", "subscription"].map((k) =>
         qc.invalidateQueries({ queryKey: [k] }),
       ),
     );
@@ -71,6 +72,10 @@ export function useCharges(params: { month: string; status?: string; group_id?: 
     queryFn: () => getAll<Charge>("/charges", params),
     enabled,
   });
+}
+
+export function useCharge(id: string) {
+  return useQuery({ queryKey: keys.charge(id), queryFn: () => api.get<Charge>(`/charges/${id}`) });
 }
 
 export function useSummary(month: string) {
