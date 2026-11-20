@@ -50,27 +50,25 @@ Em dev:
 - A API roda com `mvn spring-boot:run` e devtools: recompile na IDE (o `target/` é montado no container) para reiniciar.
 - Depois de mudar dependências do front, rode `make dev-build`: o `node_modules` do container fica num volume anônimo, que só `--renew-anon-volumes` recria (`--build` sozinho mantém o antigo).
 
+## Segurança das requisições
+
+As escritas (POST, PATCH, DELETE) exigem o token CSRF: a API grava o cookie `XSRF-TOKEN` em `GET /api/v1/auth/csrf` e o front devolve o valor no cabeçalho `X-XSRF-TOKEN`. Requisições com cabeçalho `Origin` de outro site são recusadas; só passam `FRONTEND_URL`, as origens de `CORS_ALLOWED_ORIGINS` e o próprio endereço da API. Webhooks ficam fora do CSRF e são validados pela assinatura.
+
+## Front e API em domínios separados (opcional)
+
+O padrão é tudo na mesma origem, atrás do Nginx. Para publicar o front como site estático e a API em outro subdomínio do **mesmo domínio** (ex.: `app.seudominio.com` e `api.seudominio.com`):
+
+- API: `FRONTEND_URL=https://app.seudominio.com`, `CORS_ALLOWED_ORIGINS=https://app.seudominio.com` (aceita várias, separadas por vírgula) e `CSRF_COOKIE_DOMAIN=seudominio.com`, para o front conseguir ler o cookie do token.
+- Front (no build): `VITE_API_URL=https://api.seudominio.com/api/v1`. O host precisa redirecionar rotas desconhecidas para `index.html`.
+- Use um domínio próprio. Nos domínios padrão dos hosts (`*.onrender.com`, `*.up.railway.app`…) front e API viram sites diferentes e os navegadores bloqueiam o cookie de sessão.
+
+Sem essas variáveis, tudo continua como antes.
+
 ## Pagamentos (gateway)
 
 A cobrança da assinatura passa pela interface `PaymentGateway`. Cada gateway é um provider isolado em `apps/api/src/main/java/com/parlandim/carteirama/billing/provider/<nome>/`, ligado só quando `PAYMENT_PROVIDER=<nome>`. Com `PAYMENT_PROVIDER=none` (padrão), nenhum gateway fica ativo e o pagamento retorna "Gateway de pagamento não configurado".
 
 Para trocar de gateway, mude `PAYMENT_PROVIDER`. Para remover um, apague a pasta do provider. Para adicionar outro, crie uma pasta nova com uma classe `@Configuration` + `@ConditionalOnProperty(name = "carteirama.payment.provider", havingValue = "<nome>")` que registre um `PaymentGateway` `@Primary`.
-
-### AbacatePay (Pix)
-
-O pagamento é feito por Pix dentro da própria Carteirama: a tela de assinatura mostra o QR code e o copia e cola, e a fatura vira paga sozinha quando o webhook chega.
-
-1. No dashboard da AbacatePay, crie uma chave de API com as permissões `TRANSPARENT:CREATE` e `TRANSPARENT:READ` (use o Modo Teste para testar).
-2. Gere um segredo: `openssl rand -hex 32`.
-3. Cadastre um webhook v2 com o evento `transparent.completed`, a URL `https://SEU_DOMINIO/api/v1/webhooks/gateway` e esse segredo.
-4. No `.env`: `PAYMENT_PROVIDER=abacatepay`, `ABACATEPAY_API_KEY`, `ABACATEPAY_WEBHOOK_SECRET` e `FRONTEND_URL` com o endereço público.
-
-Como funciona:
-
-- **Assinar agora** gera a fatura (vencendo no fim do teste) e abre o Pix.
-- Todo dia às 03:30 a API gera a fatura do mês 5 dias antes do vencimento e encerra as assinaturas com cancelamento agendado.
-- O webhook é aceito só com o segredo certo, e o pagamento é conferido na API da AbacatePay antes de dar baixa.
-- Cada QR code vale 1 hora. Enquanto estiver válido, é reaproveitado.
 
 ## Backups (Databasus)
 
