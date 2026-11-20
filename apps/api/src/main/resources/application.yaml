@@ -52,3 +52,10 @@ carteirama:
   email:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:Carteirama <onboarding@resend.dev>}
+  payment:
+    provider: ${PAYMENT_PROVIDER:none}
+    abacatepay:
+      api-key: ${ABACATEPAY_API_KEY:}
+      webhook-secret: ${ABACATEPAY_WEBHOOK_SECRET:}
+      pix-expires-in: 1h
+      invoice-days-before: 5
