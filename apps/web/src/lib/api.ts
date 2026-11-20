@@ -52,8 +52,9 @@ function serialize(params: Query): string {
 }
 
 const http = axios.create({
-  baseURL: "/api/v1",
+  baseURL: import.meta.env.VITE_API_URL || "/api/v1",
   withCredentials: true,
+  withXSRFToken: true,
   headers: { Accept: "application/json" },
   paramsSerializer: { serialize },
 });
@@ -78,6 +79,19 @@ async function toApiError(e: unknown): Promise<ApiError> {
   }
   return new ApiError(res.status, "internal_error", "Erro inesperado. Tente novamente.");
 }
+
+const UNSAFE_METHODS = new Set(["post", "put", "patch", "delete"]);
+
+function hasCsrfCookie(): boolean {
+  return document.cookie.split(";").some((c) => c.trim().startsWith("XSRF-TOKEN="));
+}
+
+http.interceptors.request.use(async (config) => {
+  if (UNSAFE_METHODS.has((config.method ?? "get").toLowerCase()) && !hasCsrfCookie()) {
+    await http.get("/auth/csrf");
+  }
+  return config;
+});
 
 http.interceptors.response.use(undefined, async (e) => {
   const err = await toApiError(e);
