@@ -1,75 +1,15 @@
-import { Copy, CreditCard, ExternalLink, FileText, Lock, QrCode, ReceiptText } from "lucide-react";
+import { CreditCard, Lock, ReceiptText } from "lucide-react";
 import { useState } from "react";
-import { Button, Card, EmptyState, ErrorState, Eyebrow, FormError, LinkButton, Loading, Modal, PageHeader, StatusPill, TableHead, TotalBar } from "../../components/ui";
+import { Button, Card, EmptyState, ErrorState, Eyebrow, LinkButton, Loading, Modal, PageHeader, StatusPill, TableHead, TotalBar } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { useMe } from "../../lib/auth";
 import { date, daysBetween, formatDocument, instantDate, instantDay, money, plural, today } from "../../lib/format";
 import { keys, useInvoices, useSubscription } from "../../lib/queries";
 import { useToast } from "../../lib/toast";
-import type { Invoice, PaymentLink, Subscription as Sub } from "../../lib/types";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Subscription as Sub } from "../../lib/types";
+import { useQueryClient } from "@tanstack/react-query";
 
 const methodLabel = { pix: "Pix", boleto: "Boleto", card: "Cartão" } as const;
-
-function PayInvoiceModal({ invoice, onClose }: { invoice: Invoice | null; onClose: () => void }) {
-  const toast = useToast();
-  const { data: link, error } = useQuery({
-    queryKey: ["payment-link", invoice?.id],
-    queryFn: () => api.post<PaymentLink>(`/subscription/invoices/${invoice!.id}/payment-link`),
-    enabled: !!invoice,
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
-  });
-  const close = onClose;
-
-  return (
-    <Modal open={!!invoice} onClose={close} title={invoice ? `Pagar fatura ${invoice.number}` : "Pagar fatura"}>
-      {invoice && (
-        <div className="flex flex-col gap-4">
-          <p>
-            Valor: <strong>{money(invoice.amount_cents)}</strong> · vencimento {date(invoice.due_date)}
-          </p>
-          <FormError message={error ? errorMessage(error) : null} />
-          {!link && !error && <p className="font-mono text-sm text-muted">Gerando formas de pagamento…</p>}
-          {link?.pix_code && (
-            <div className="rounded-xl border-2 border-navy p-4">
-              <p className="mb-2 flex items-center gap-2 font-bold">
-                <QrCode className="size-4" /> Pix copia e cola
-              </p>
-              <p className="rounded-lg bg-paper p-3 font-mono text-xs break-all">{link.pix_code}</p>
-              <Button
-                size="sm"
-                icon={Copy}
-                className="mt-3"
-                onClick={() => navigator.clipboard.writeText(link.pix_code!).then(() => toast.show("Código Pix copiado."))}
-              >
-                Copiar código
-              </Button>
-            </div>
-          )}
-          {link?.card_url && (
-            <a href={link.card_url} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border-2 border-navy p-4 font-bold hover:bg-paper-2">
-              <span className="flex items-center gap-2">
-                <CreditCard className="size-4" /> Pagar com cartão
-              </span>
-              <ExternalLink className="size-4" />
-            </a>
-          )}
-          {link?.boleto_url && (
-            <a href={link.boleto_url} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border-2 border-navy p-4 font-bold hover:bg-paper-2">
-              <span className="flex items-center gap-2">
-                <FileText className="size-4" /> Abrir boleto
-              </span>
-              <ExternalLink className="size-4" />
-            </a>
-          )}
-          <p className="text-sm text-muted">Assim que o pagamento for confirmado, a fatura aparece como paga e o acesso é liberado.</p>
-        </div>
-      )}
-    </Modal>
-  );
-}
 
 function planLine(sub: Sub) {
   if (sub.account_status === "trial" && sub.trial_ends_at) {
@@ -88,7 +28,6 @@ export default function Subscription() {
   const { data: me } = useMe();
   const { data: sub, isLoading, error, refetch } = useSubscription();
   const { data: invoices } = useInvoices();
-  const [paying, setPaying] = useState<Invoice | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -189,9 +128,9 @@ export default function Subscription() {
           {sub.status !== "cancelled" && (
             <div className="mt-6 flex flex-wrap gap-3">
               {openInvoice && (
-                <Button variant="primary" onClick={() => setPaying(openInvoice)}>
+                <LinkButton to={`/app/assinatura/faturas/${openInvoice.id}`} variant="primary">
                   Pagar fatura em aberto
-                </Button>
+                </LinkButton>
               )}
               <Button icon={CreditCard} loading={checkingOut} onClick={checkout}>
                 {sub.account_status === "trial" ? "Assinar agora" : "Configurar cartão"}
@@ -254,9 +193,9 @@ export default function Subscription() {
                   </span>
                   <span className="text-right">
                     {i.status === "pending" ? (
-                      <Button size="sm" variant="primary" onClick={() => setPaying(i)}>
+                      <LinkButton to={`/app/assinatura/faturas/${i.id}`} size="sm" variant="primary">
                         Pagar
-                      </Button>
+                      </LinkButton>
                     ) : i.paid_at ? (
                       <span className="font-mono text-xs text-muted">pago {instantDate(i.paid_at)}</span>
                     ) : null}
@@ -269,7 +208,6 @@ export default function Subscription() {
         <TotalBar label="Total pago" sub={plural(paid.length, "fatura paga", "faturas pagas")} value={money(paidTotal)} />
       </Card>
 
-      <PayInvoiceModal invoice={paying} onClose={() => setPaying(null)} />
       <Modal
         open={confirmCancel}
         onClose={() => setConfirmCancel(false)}

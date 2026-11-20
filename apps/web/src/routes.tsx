@@ -47,6 +47,7 @@ const router = createBrowserRouter([
       { path: "cobrancas", element: <Charges /> },
       { path: "exportar", element: <Export /> },
       { path: "assinatura", element: <Subscription /> },
+      { path: "assinatura/faturas/:id", lazy: page(() => import("./pages/app/InvoicePayment")) },
       { path: "conta", element: <Account /> },
     ],
   },
