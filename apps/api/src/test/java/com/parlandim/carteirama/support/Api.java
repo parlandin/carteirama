@@ -6,6 +6,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.CookieManager;
+import java.net.HttpCookie;
 import java.net.CookiePolicy;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -20,12 +21,13 @@ public class Api {
     private final String baseUrl;
     private final ObjectMapper mapper;
     private final HttpClient http;
+    private final CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
 
     public Api(String baseUrl, ObjectMapper mapper) {
         this.baseUrl = baseUrl;
         this.mapper = mapper;
         this.http = HttpClient.newBuilder()
-                .cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL))
+                .cookieHandler(cookies)
                 .build();
     }
 
@@ -51,6 +53,26 @@ public class Api {
 
     public Res post(String path, Object body) {
         return send(HttpRequest.newBuilder(uri(path)).POST(json(body)));
+    }
+
+    public Res postWithoutCsrf(String path, Object body) {
+        return exchange(HttpRequest.newBuilder(uri(path)).POST(json(body)));
+    }
+
+    public Res postWithoutCsrf(String path, Object body, String origin) {
+        return exchange(HttpRequest.newBuilder(uri(path)).header("Origin", origin).POST(json(body)));
+    }
+
+    public Res preflight(String path, String origin, String method) {
+        return exchange(HttpRequest.newBuilder(uri(path))
+                .header("Origin", origin)
+                .header("Access-Control-Request-Method", method)
+                .header("Access-Control-Request-Headers", "content-type,x-xsrf-token")
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody()));
+    }
+
+    public Res postWithOrigin(String path, Object body, String origin) {
+        return send(HttpRequest.newBuilder(uri(path)).header("Origin", origin).POST(json(body)));
     }
 
     public Res postSigned(String path, Object body, String signature) {
@@ -86,6 +108,33 @@ public class Api {
     }
 
     private Res send(HttpRequest.Builder builder) {
+        if (!"GET".equals(builder.copy().build().method())) {
+            builder.header("X-XSRF-TOKEN", csrfToken());
+        }
+        return exchange(builder);
+    }
+
+    private String csrfToken() {
+        String token = csrfCookie();
+        if (token == null) {
+            get("/api/v1/auth/csrf");
+            token = csrfCookie();
+        }
+        if (token == null) {
+            throw new IllegalStateException("Cookie XSRF-TOKEN não recebido");
+        }
+        return token;
+    }
+
+    private String csrfCookie() {
+        return cookies.getCookieStore().getCookies().stream()
+                .filter(c -> c.getName().equals("XSRF-TOKEN"))
+                .map(HttpCookie::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Res exchange(HttpRequest.Builder builder) {
         try {
             HttpResponse<String> res = http.send(builder.header("Content-Type", "application/json").build(),
                     HttpResponse.BodyHandlers.ofString());

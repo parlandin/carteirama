@@ -39,6 +39,8 @@ springdoc:
     path: /api/docs
   swagger-ui:
     path: /api/swagger
+    csrf:
+      enabled: true
 
 logging:
   pattern:
@@ -49,6 +51,14 @@ carteirama:
   trial-days: 7
   suspend-after-days: 5
   retention-days: 90
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    name: ${ADMIN_NAME:}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  csrf:
+    cookie-domain: ${CSRF_COOKIE_DOMAIN:}
   email:
     resend-api-key: ${RESEND_API_KEY:}
     from: ${EMAIL_FROM:Carteirama <onboarding@resend.dev>}
