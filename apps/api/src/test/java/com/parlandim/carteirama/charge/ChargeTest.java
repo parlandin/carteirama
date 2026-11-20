@@ -195,6 +195,104 @@ class ChargeTest extends IntegrationTest {
     }
 
     @Test
+    void cobrancaAvulsaSemClienteCadastrado() {
+        Api api = registered();
+        String ana = client(api, group(api, "G"), "Ana", 5000, 10);
+
+        assertThat(api.post("/api/v1/charges", Api.body("kind", "one_off", "description", "Formatação",
+                "amount_cents", 100, "due_date", "2026-12-15")).details()).containsExactly("payer_name:required");
+        assertThat(api.post("/api/v1/charges", Api.body("payer_name", "João", "amount_cents", 100,
+                "due_date", "2026-12-15")).details()).containsExactly("client_id:required");
+        assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "payer_name", "João", "kind", "one_off",
+                "description", "x", "amount_cents", 100, "due_date", "2026-12-15")).details())
+                .containsExactly("payer_name:not_allowed");
+
+        var avulsa = api.post("/api/v1/charges", Api.body("kind", "one_off", "payer_name", " João ",
+                "description", "Formatação", "amount_cents", 12000, "due_date", "2026-12-15"));
+        assertThat(avulsa.status()).isEqualTo(201);
+        assertThat(avulsa.json().path("client_id").isNull()).isTrue();
+        assertThat(avulsa.json().path("group_id").isNull()).isTrue();
+        assertThat(avulsa.json().path("client_name").asString()).isEqualTo("João");
+        String id = avulsa.json().path("id").asString();
+
+        assertThat(api.post("/api/v1/charges/" + id + "/pay", Map.of("paid_at", TODAY.toString())).status()).isEqualTo(200);
+        assertThat(api.get("/api/v1/charges?month=2026-12").json().path("data")).hasSize(1);
+        assertThat(api.get("/api/v1/summary?month=2026-12").json().path("total_cents").asLong()).isEqualTo(12000);
+        assertThat(api.get("/api/v1/clients").json().path("data")).hasSize(1);
+        assertThat(api.get("/api/v1/export?type=charges&format=csv&month=2026-12").raw()).contains("João", "Formatação");
+        assertThat(api.get("/api/v1/export?type=clients&type=charges&type=groups&format=csv&month=2026-12").raw()).contains("João", "Ana");
+    }
+
+    @Test
+    void cobrancaAvulsaSemClienteEntraNoGrupoEscolhido() {
+        Api api = registered();
+        String g = group(api, "G");
+        String outro = group(api, "Outro");
+        String ana = client(api, g, "Ana", 5000, 10);
+        api.post("/api/v1/charges/generate", Map.of("month", "2026-12"));
+
+        assertThat(api.post("/api/v1/charges", Api.body("client_id", ana, "group_id", outro, "kind", "one_off",
+                "description", "x", "amount_cents", 100, "due_date", "2026-12-15")).details())
+                .containsExactly("group_id:not_allowed");
+        assertThat(api.post("/api/v1/charges", Api.body("payer_name", "João", "group_id", registered().post(
+                "/api/v1/groups", Map.of("name", "Alheio")).json().path("id").asString(), "kind", "one_off",
+                "description", "x", "amount_cents", 100, "due_date", "2026-12-15")).details())
+                .containsExactly("group_id:not_found");
+
+        var avulsa = api.post("/api/v1/charges", Api.body("kind", "one_off", "payer_name", "João", "group_id", g,
+                "description", "Formatação", "amount_cents", 12000, "due_date", "2026-12-15"));
+        assertThat(avulsa.status()).isEqualTo(201);
+        assertThat(avulsa.json().path("group_id").asString()).isEqualTo(g);
+        api.post("/api/v1/charges", Api.body("kind", "one_off", "payer_name", "Bia", "description", "Sem grupo",
+                "amount_cents", 700, "due_date", "2026-12-15"));
+
+        var doGrupo = api.get("/api/v1/charges?month=2026-12&group_id=" + g).json().path("data");
+        assertThat(doGrupo).hasSize(2);
+        assertThat(api.get("/api/v1/charges?month=2026-12&group_id=" + outro).json().path("data")).isEmpty();
+        assertThat(api.get("/api/v1/charges?month=2026-12").json().path("data")).hasSize(3);
+
+        var grupos = api.get("/api/v1/groups?month=2026-12").json().path("data");
+        assertThat(grupos.get(0).path("name").asString()).isEqualTo("G");
+        assertThat(grupos.get(0).path("month_total_cents").asLong()).isEqualTo(17000);
+        assertThat(grupos.get(1).path("month_total_cents").asLong()).isZero();
+
+        assertThat(api.get("/api/v1/export?type=charges&type=groups&format=csv&month=2026-12").raw()).contains("João");
+    }
+
+    @Test
+    void detalheEEdicaoDaCobrancaAvulsa() {
+        Api api = registered();
+        String g = group(api, "G");
+        String ana = client(api, g, "Ana", 5000, 10);
+        String id = api.post("/api/v1/charges", Api.body("kind", "one_off", "payer_name", "João", "group_id", g,
+                "description", "Formatação", "amount_cents", 12000, "due_date", "2026-12-15")).json().path("id").asString();
+
+        var detalhe = api.get("/api/v1/charges/" + id);
+        assertThat(detalhe.status()).isEqualTo(200);
+        assertThat(detalhe.json().path("group_name").asString()).isEqualTo("G");
+        assertThat(registered().get("/api/v1/charges/" + id).status()).isEqualTo(404);
+
+        var edit = api.patch("/api/v1/charges/" + id, Api.body("payer_name", " João Silva ", "group_id", null,
+                "due_date", "2027-01-05", "description", "Formatação e backup"));
+        assertThat(edit.status()).isEqualTo(200);
+        assertThat(edit.json().path("client_name").asString()).isEqualTo("João Silva");
+        assertThat(edit.json().path("group_id").isNull()).isTrue();
+        assertThat(edit.json().path("reference_month").asString()).isEqualTo("2027-01-01");
+        assertThat(api.get("/api/v1/charges?month=2026-12").json().path("data")).isEmpty();
+        assertThat(api.get("/api/v1/charges?month=2027-01").json().path("data")).hasSize(1);
+        assertThat(api.patch("/api/v1/charges/" + id, Map.of("payer_name", "x")).details())
+                .containsExactly("payer_name:required");
+
+        String daAna = api.post("/api/v1/charges", Api.body("client_id", ana, "kind", "one_off",
+                "description", "Visita", "amount_cents", 100, "due_date", "2026-12-15")).json().path("id").asString();
+        assertThat(api.patch("/api/v1/charges/" + daAna, Map.of("payer_name", "Outro")).details())
+                .containsExactly("payer_name:not_allowed");
+        assertThat(api.patch("/api/v1/charges/" + daAna, Map.of("group_id", g)).details())
+                .containsExactly("group_id:not_allowed");
+        assertThat(api.get("/api/v1/charges/" + daAna).json().path("group_id").asString()).isEqualTo(g);
+    }
+
+    @Test
     void isolamentoEContaSuspensa() {
         Api a = registered();
         Api b = registered();
