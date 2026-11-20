@@ -158,7 +158,7 @@ function ClientForm({ initial }: { initial?: Client }) {
             <Field label="Nome do cliente" required htmlFor="name" error={errors.name}>
               <Input id="name" maxLength={120} placeholder="Ex.: Clínica Vita Odonto" value={values.name} onChange={(e) => set("name", e.target.value)} invalid={!!errors.name} />
             </Field>
-            <Field label={isPj ? "CNPJ" : "CPF ou CNPJ"} htmlFor="document" error={errors.document}>
+            <Field label={isPj ? "CNPJ" : "CPF ou CNPJ"} htmlFor="document" hint="Opcional." error={errors.document}>
               <Input id="document" mono inputMode="numeric" placeholder="00.000.000/0000-00" value={values.document} onChange={(e) => set("document", maskDocument(e.target.value))} invalid={!!errors.document} />
             </Field>
           </div>
