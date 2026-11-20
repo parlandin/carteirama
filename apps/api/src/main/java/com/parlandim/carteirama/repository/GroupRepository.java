@@ -29,8 +29,8 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
                 g.id, g.name, g.color, g.notes,
                 (select count(c) from Client c
                   where c.group = g and c.status <> :archived),
-                (select coalesce(sum(ch.amountCents + ch.bonusCents), 0L) from Charge ch
-                  where ch.client.group = g and ch.referenceMonth = :month
+                (select coalesce(sum(ch.amountCents + ch.bonusCents), 0L) from Charge ch left join ch.client cl
+                  where (cl.group = g or ch.group = g) and ch.referenceMonth = :month
                     and ch.status <> :cancelled))
             from Group g
             where g.account.id = :accountId and g.archivedAt is null

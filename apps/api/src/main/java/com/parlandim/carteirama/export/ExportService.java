@@ -4,6 +4,7 @@ import com.parlandim.carteirama.common.time.BusinessClock;
 import com.parlandim.carteirama.group.dto.GroupListItem;
 import com.parlandim.carteirama.model.Charge;
 import com.parlandim.carteirama.model.Client;
+import com.parlandim.carteirama.model.Group;
 import com.parlandim.carteirama.model.enums.ChargeKind;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
 import com.parlandim.carteirama.model.enums.ClientStatus;
@@ -123,7 +124,9 @@ public class ExportService {
         if (withClients) {
             Map<UUID, List<Charge>> chargesByClient = new HashMap<>();
             for (Charge c : monthCharges) {
-                chargesByClient.computeIfAbsent(c.getClient().getId(), k -> new ArrayList<>()).add(c);
+                if (c.getClient() != null) {
+                    chargesByClient.computeIfAbsent(c.getClient().getId(), k -> new ArrayList<>()).add(c);
+                }
             }
             for (Client c : allClients(accountId)) {
                 List<Charge> clientCharges = chargesByClient.getOrDefault(c.getId(), List.of());
@@ -143,16 +146,36 @@ public class ExportService {
                 }
                 groupsWithLines.add(c.getGroup().getId());
             }
-        } else {
             for (Charge c : monthCharges) {
-                List<Object> row = new ArrayList<>(Arrays.asList(c.getClient().getName(),
-                        c.getClient().getGroup().getName()));
+                if (c.getClient() != null) {
+                    continue;
+                }
+                Group group = c.getGroup();
+                List<Object> row = new ArrayList<>();
+                row.add(c.getPayer());
+                row.addAll(Collections.nCopies(7, null));
+                row.add(group == null ? null : group.getName());
                 if (withGroups) {
-                    row.addAll(groupCells(groupStats.get(c.getClient().getGroup().getId())));
+                    row.addAll(groupCells(group == null ? null : groupStats.get(group.getId())));
                 }
                 row.addAll(chargeCells(c, month, today));
-                groupsWithLines.add(c.getClient().getGroup().getId());
-                lines.add(new Line(c.getClient().getGroup().getName(), c.getClient().getName(), row));
+                if (group != null) {
+                    groupsWithLines.add(group.getId());
+                }
+                lines.add(new Line(group == null ? "" : group.getName(), c.getPayer(), row));
+            }
+        } else {
+            for (Charge c : monthCharges) {
+                Group group = c.getEffectiveGroup();
+                List<Object> row = new ArrayList<>(Arrays.asList(c.getPayer(), group == null ? null : group.getName()));
+                if (withGroups) {
+                    row.addAll(groupCells(group == null ? null : groupStats.get(group.getId())));
+                }
+                row.addAll(chargeCells(c, month, today));
+                if (group != null) {
+                    groupsWithLines.add(group.getId());
+                }
+                lines.add(new Line(group == null ? "" : group.getName(), c.getPayer(), row));
             }
         }
 
@@ -230,7 +253,7 @@ public class ExportService {
         LocalDate today = clock.today();
         List<List<Object>> rows = new ArrayList<>();
         for (Charge c : monthCharges(accountId, month)) {
-            rows.add(Arrays.asList(c.getClient().getName(), c.getClient().getGroup().getName(), month.toString(),
+            rows.add(Arrays.asList(c.getPayer(), c.getEffectiveGroup() == null ? null : c.getEffectiveGroup().getName(), month.toString(),
                     chargeName(c), c.getDueDate(), new Sheet.Money(c.getAmountCents()),
                     new Sheet.Money(c.getBonusCents()), new Sheet.Money(c.getTotalCents()),
                     new Sheet.Money(c.getCostCents()), new Sheet.Money(c.getNetCents()), chargeLabel(c, today),

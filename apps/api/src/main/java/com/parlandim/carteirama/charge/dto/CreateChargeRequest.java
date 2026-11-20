@@ -11,7 +11,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public record CreateChargeRequest(
-        @NotNull UUID clientId,
+        UUID clientId,
+        @Size(max = 120) String payerName,
+        UUID groupId,
         @NotNull @Min(1) @Max(99_999_999) Integer amountCents,
         @NotNull LocalDate dueDate,
         @Size(max = 500) String note,
@@ -20,6 +22,7 @@ public record CreateChargeRequest(
 ) {
     public CreateChargeRequest {
         note = Text.trimToNull(note);
+        payerName = Text.trimToNull(payerName);
         kind = kind == null ? ChargeKind.recurring : kind;
         description = Text.trimToNull(description);
     }

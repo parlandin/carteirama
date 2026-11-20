@@ -19,14 +19,14 @@ import java.util.UUID;
 
 public interface ChargeRepository extends JpaRepository<Charge, UUID>, JpaSpecificationExecutor<Charge> {
 
-    @EntityGraph(attributePaths = {"client", "client.group"})
+    @EntityGraph(attributePaths = {"client", "client.group", "group"})
     Optional<Charge> findByIdAndAccountId(UUID id, UUID accountId);
 
     @Override
-    @EntityGraph(attributePaths = {"client", "client.group"})
+    @EntityGraph(attributePaths = {"client", "client.group", "group"})
     Page<Charge> findAll(Specification<Charge> spec, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"client", "client.group"})
+    @EntityGraph(attributePaths = {"client", "client.group", "group"})
     List<Charge> findAllByAccountIdAndClientIdOrderByReferenceMonthDesc(UUID accountId, UUID clientId);
 
     Optional<Charge> findFirstByClientIdAndReferenceMonthAndKind(UUID clientId, LocalDate referenceMonth, ChargeKind kind);

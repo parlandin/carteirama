@@ -10,13 +10,17 @@ import com.parlandim.carteirama.common.time.BusinessClock;
 import com.parlandim.carteirama.common.web.PageResponse;
 import com.parlandim.carteirama.model.Charge;
 import com.parlandim.carteirama.model.Client;
+import com.parlandim.carteirama.model.Group;
 import com.parlandim.carteirama.model.enums.ChargeKind;
 import com.parlandim.carteirama.model.enums.ChargeStatus;
 import com.parlandim.carteirama.model.enums.ClientStatus;
 import com.parlandim.carteirama.repository.AccountRepository;
 import com.parlandim.carteirama.repository.ChargeRepository;
 import com.parlandim.carteirama.repository.ClientRepository;
+import com.parlandim.carteirama.repository.GroupRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +42,7 @@ public class ChargeService {
 
     private final ChargeRepository charges;
     private final ClientRepository clients;
+    private final GroupRepository groups;
     private final AccountRepository accounts;
     private final BusinessClock clock;
     private final EntityManager entityManager;
@@ -54,7 +59,9 @@ public class ChargeService {
                 p.add(cb.equal(root.get("client").get("id"), clientId));
             }
             if (groupId != null) {
-                p.add(cb.equal(root.get("client").get("group").get("id"), groupId));
+                Join<Charge, Client> client = root.join("client", JoinType.LEFT);
+                p.add(cb.or(cb.equal(client.get("group").get("id"), groupId),
+                        cb.equal(root.get("group").get("id"), groupId)));
             }
             if (status != null) {
                 switch (status) {
@@ -82,14 +89,28 @@ public class ChargeService {
 
     @Transactional
     public ChargeResponse create(UUID accountId, CreateChargeRequest req) {
-        Client client = clients.findByIdAndAccountId(req.clientId(), accountId).orElseThrow(ApiException::notFound);
-        if (client.getStatus() != ClientStatus.active) {
-            throw ApiException.conflict("client_not_active", "O cliente não está ativo.");
-        }
         boolean oneOff = req.kind() == ChargeKind.one_off;
         if (oneOff && req.description() == null) {
             throw ValidationException.of("description", "required", "Descreva a cobrança avulsa.");
         }
+        Client client = null;
+        if (req.clientId() != null) {
+            if (req.payerName() != null) {
+                throw ValidationException.of("payer_name", "not_allowed", "Informe o cliente ou o nome, não os dois.");
+            }
+            if (req.groupId() != null) {
+                throw ValidationException.of("group_id", "not_allowed", "A cobrança de um cliente usa o grupo dele.");
+            }
+            client = clients.findByIdAndAccountId(req.clientId(), accountId).orElseThrow(ApiException::notFound);
+            if (client.getStatus() != ClientStatus.active) {
+                throw ApiException.conflict("client_not_active", "O cliente não está ativo.");
+            }
+        } else if (!oneOff) {
+            throw ValidationException.of("client_id", "required", "Escolha o cliente.");
+        } else if (req.payerName() == null || req.payerName().length() < 2) {
+            throw ValidationException.of("payer_name", "required", "Informe para quem é a cobrança.");
+        }
+        Group group = req.groupId() == null ? null : activeGroup(accountId, req.groupId());
         LocalDate referenceMonth = req.dueDate().withDayOfMonth(1);
         if (!oneOff && charges.existsByClientIdAndReferenceMonthAndKind(client.getId(), referenceMonth,
                 ChargeKind.recurring)) {
@@ -98,6 +119,8 @@ public class ChargeService {
         Charge charge = new Charge();
         charge.setAccount(accounts.getReferenceById(accountId));
         charge.setClient(client);
+        charge.setPayerName(client == null ? req.payerName() : null);
+        charge.setGroup(group);
         charge.setReferenceMonth(referenceMonth);
         charge.setAmountCents(req.amountCents());
         charge.setDueDate(req.dueDate());
@@ -119,6 +142,9 @@ public class ChargeService {
         }
         if (req.getDueDate() != null) {
             charge.setDueDate(req.getDueDate());
+            if (charge.getKind() == ChargeKind.one_off) {
+                charge.setReferenceMonth(req.getDueDate().withDayOfMonth(1));
+            }
         }
         if (req.getNote() != null) {
             charge.setNote(req.getNote().orElse(null));
@@ -132,7 +158,27 @@ public class ChargeService {
             }
             charge.setDescription(req.getDescription());
         }
+        if (req.getPayerName() != null) {
+            if (charge.getClient() != null) {
+                throw ValidationException.of("payer_name", "not_allowed", "A cobrança de um cliente usa o nome dele.");
+            }
+            if (req.getPayerName().length() < 2) {
+                throw ValidationException.of("payer_name", "required", "Informe para quem é a cobrança.");
+            }
+            charge.setPayerName(req.getPayerName());
+        }
+        if (req.getGroupId() != null) {
+            if (charge.getClient() != null) {
+                throw ValidationException.of("group_id", "not_allowed", "A cobrança de um cliente usa o grupo dele.");
+            }
+            charge.setGroup(req.getGroupId().map(g -> activeGroup(accountId, g)).orElse(null));
+        }
         return ChargeResponse.of(charges.saveAndFlush(charge), clock.today());
+    }
+
+    @Transactional(readOnly = true)
+    public ChargeResponse get(UUID accountId, UUID id) {
+        return ChargeResponse.of(find(accountId, id), clock.today());
     }
 
     @Transactional
@@ -197,6 +243,12 @@ public class ChargeService {
         long total = paid + pending + late;
         return new SummaryResponse(month.toString(), total, paid, pending, late,
                 paidN + pendingN + lateN, paidN, pendingN, lateN, cost, total - cost);
+    }
+
+    private Group activeGroup(UUID accountId, UUID groupId) {
+        return groups.findByIdAndAccountId(groupId, accountId)
+                .filter(g -> g.getArchivedAt() == null)
+                .orElseThrow(() -> ValidationException.of("group_id", "not_found", "Grupo não encontrado."));
     }
 
     private Charge find(UUID accountId, UUID id) {

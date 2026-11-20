@@ -11,6 +11,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 @Getter
 public class UpdateChargeRequest {
@@ -27,6 +28,15 @@ public class UpdateChargeRequest {
     @JsonSetter(nulls = Nulls.FAIL)
     @Size(max = 120)
     private String description;
+    @JsonSetter(nulls = Nulls.FAIL)
+    @Size(max = 120)
+    private String payerName;
+    @Setter
+    private Optional<UUID> groupId;
+
+    public void setPayerName(String payerName) {
+        this.payerName = payerName.strip();
+    }
 
     public void setNote(Optional<String> note) {
         this.note = Text.patch(note, Text::trimToNull);

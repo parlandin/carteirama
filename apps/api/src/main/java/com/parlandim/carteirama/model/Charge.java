@@ -30,9 +30,16 @@ public class Charge extends BaseEntity {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "client_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id")
     private Client client;
+
+    @Column(name = "payer_name")
+    private String payerName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private Group group;
 
     @Column(name = "reference_month", nullable = false)
     private LocalDate referenceMonth;
@@ -67,6 +74,14 @@ public class Charge extends BaseEntity {
     @Setter(lombok.AccessLevel.NONE)
     @Formula("(select coalesce(sum(e.amount_cents), 0) from client_extras e where e.client_id = client_id and e.kind = 'cost' and kind = 'recurring' and e.start_month <= reference_month and (e.end_month is null or e.end_month >= reference_month))")
     private long costCents;
+
+    public String getPayer() {
+        return client != null ? client.getName() : payerName;
+    }
+
+    public Group getEffectiveGroup() {
+        return client != null ? client.getGroup() : group;
+    }
 
     public long getTotalCents() {
         return amountCents + bonusCents;

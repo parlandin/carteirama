@@ -67,6 +67,11 @@ public class ChargeController {
         return chargeService.create(user.requireAccountId(), body);
     }
 
+    @GetMapping("/charges/{id}")
+    public ChargeResponse get(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
+        return chargeService.get(user.requireAccountId(), id);
+    }
+
     @PatchMapping("/charges/{id}")
     @WriteAccess
     public ChargeResponse update(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id,
