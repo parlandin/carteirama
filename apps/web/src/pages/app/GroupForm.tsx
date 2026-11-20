@@ -10,6 +10,7 @@ import { money } from "../../lib/format";
 import { useGroup, useInvalidateData } from "../../lib/queries";
 import { useToast } from "../../lib/toast";
 import type { GroupResponse } from "../../lib/types";
+import { useOrigin } from "../../lib/origin";
 import { useForm } from "../../lib/useForm";
 
 export default function GroupFormPage() {
@@ -32,6 +33,7 @@ function GroupForm({ initial, activeClients = 0 }: { initial?: GroupResponse; ac
   const { data: me } = useMe();
   const readOnly = isReadOnly(me);
   const editing = !!initial;
+  const origin = useOrigin(editing ? { to: `/app/grupos/${initial!.id}`, label: initial!.name } : { to: "/app", label: "Grupos" });
   const [busy, setBusy] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -54,7 +56,8 @@ function GroupForm({ initial, activeClients = 0 }: { initial?: GroupResponse; ac
       const saved = editing ? await api.patch<GroupResponse>(`/groups/${initial!.id}`, body) : await api.post<GroupResponse>("/groups", body);
       await invalidate();
       toast.show(editing ? "Grupo atualizado." : "Grupo criado.");
-      navigate(`/app/grupos/${saved.id}`, { replace: true });
+      if (editing) origin.goBack();
+      else navigate(`/app/grupos/${saved.id}`, { replace: true, state: origin.carry });
     } catch (err) {
       fail(err);
     } finally {
@@ -80,7 +83,7 @@ function GroupForm({ initial, activeClients = 0 }: { initial?: GroupResponse; ac
   return (
     <>
       <PageHeader
-        back={editing ? { to: `/app/grupos/${initial!.id}`, label: initial!.name } : { to: "/app", label: "Grupos" }}
+        back={origin.back}
         eyebrow={editing ? "// Editar cadastro" : "// Novo cadastro"}
         title={editing ? "Editar grupo" : "Cadastrar grupo"}
         subtitle="Um grupo é uma categoria de clientes, como uma assinatura ou um projeto. O total mensal de cada grupo aparece na tela inicial."
@@ -137,7 +140,7 @@ function GroupForm({ initial, activeClients = 0 }: { initial?: GroupResponse; ac
           )}
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button onClick={() => navigate(-1)}>Cancelar</Button>
+            <Button onClick={origin.goBack}>Cancelar</Button>
             <Button type="submit" variant="primary" icon={Check} loading={busy} disabled={readOnly}>
               Salvar grupo
             </Button>

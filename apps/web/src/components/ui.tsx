@@ -174,11 +174,11 @@ export function PageHeader({
   subtitle?: ReactNode;
   actions?: ReactNode;
   badge?: ReactNode;
-  back?: { to: string; label: string };
+  back?: BackTarget;
 }) {
   return (
     <header className="mb-6 md:mb-8">
-      {back && <BackLink to={back.to} label={back.label} className="mb-6 md:mb-10" />}
+      {back && <BackLink {...back} className="mb-6 md:mb-10" />}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           {eyebrow && <Eyebrow className="mb-2">{eyebrow}</Eyebrow>}
@@ -194,10 +194,18 @@ export function PageHeader({
   );
 }
 
-export function BackLink({ to, label, className }: { to: string; label: string; className?: string }) {
+type BackTarget = { to: string; label: string; state?: unknown; onBack?: () => void };
+
+export function BackLink({ to, label, state, onBack, className }: BackTarget & { className?: string }) {
   return (
     <Link
       to={to}
+      state={state}
+      onClick={(e) => {
+        if (!onBack || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        onBack();
+      }}
       className={cx("inline-flex items-center gap-2 font-mono text-xs tracking-widest text-muted uppercase hover:text-ink", className)}
     >
       <ArrowLeft className="size-4" />[{label}]

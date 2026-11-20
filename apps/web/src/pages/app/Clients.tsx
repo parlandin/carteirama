@@ -6,6 +6,7 @@ import { errorMessage } from "../../lib/api";
 import { isReadOnly, useMe } from "../../lib/auth";
 import { currentMonth, formatDocument, formatPhone, money, plural } from "../../lib/format";
 import { useCharges, useClients, useGroups } from "../../lib/queries";
+import { useHere } from "../../lib/origin";
 
 const ARCHIVED = "__archived";
 
@@ -13,6 +14,7 @@ export default function Clients() {
   const { data: me } = useMe();
   const readOnly = isReadOnly(me);
   const [params, setParams] = useSearchParams();
+  const here = useHere("Clientes");
   const filter = params.get("grupo") ?? "all";
   const [search, setSearch] = useState(params.get("q") ?? "");
   const [q, setQ] = useState(search);
@@ -60,7 +62,7 @@ export default function Clients() {
         title="Clientes"
         subtitle="Todos os clientes cadastrados e quanto cada um paga por mês."
         actions={
-          <LinkButton to="/app/clientes/novo" variant="primary" icon={Plus} disabled={readOnly} className="w-full sm:w-auto">
+          <LinkButton to="/app/clientes/novo" state={here} variant="primary" icon={Plus} disabled={readOnly} className="w-full sm:w-auto">
             Novo cliente
           </LinkButton>
         }
@@ -106,7 +108,7 @@ export default function Clients() {
               action={
                 !q &&
                 !archived && (
-                  <LinkButton to="/app/clientes/novo" variant="primary" icon={Plus} disabled={readOnly}>
+                  <LinkButton to="/app/clientes/novo" state={here} variant="primary" icon={Plus} disabled={readOnly}>
                     Cadastrar cliente
                   </LinkButton>
                 )
@@ -127,6 +129,7 @@ export default function Clients() {
                   <li key={c.id} className="border-b-2 border-navy last:border-b-0">
                     <Link
                       to={`/app/clientes/${c.id}`}
+                      state={here}
                       className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-2 px-4 py-4 hover:bg-paper-2 sm:px-6 md:grid-cols-[1.5fr_1.1fr_1.4fr_70px_120px_120px] md:items-center md:gap-5"
                     >
                       <div className="min-w-0">

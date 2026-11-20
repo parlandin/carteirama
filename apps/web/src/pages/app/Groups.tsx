@@ -6,6 +6,7 @@ import { groupColor } from "../../lib/colors";
 import { errorMessage } from "../../lib/api";
 import { money, monthShort, plural } from "../../lib/format";
 import { useAutoGenerateCharges, useGroups } from "../../lib/queries";
+import { useHere } from "../../lib/origin";
 import { useMonthParam } from "../../lib/useMonth";
 
 function Share({ pct, color }: { pct: number; color: string | null }) {
@@ -23,6 +24,7 @@ export default function Groups() {
   const { data: me } = useMe();
   const readOnly = isReadOnly(me);
   const [month, shift] = useMonthParam();
+  const here = useHere("Grupos");
   useAutoGenerateCharges(!readOnly);
   const { data: groups, isLoading, error, refetch } = useGroups(month);
 
@@ -45,10 +47,10 @@ export default function Groups() {
         actions={
           <>
             <MonthPicker month={month} onChange={shift} className="w-full sm:w-auto" />
-            <LinkButton to="/app/grupos/novo" disabled={readOnly} className="flex-1 sm:flex-none">
+            <LinkButton to="/app/grupos/novo" state={here} disabled={readOnly} className="flex-1 sm:flex-none">
               Novo grupo
             </LinkButton>
-            <LinkButton to="/app/clientes/novo" variant="primary" icon={Plus} disabled={readOnly} className="flex-1 sm:flex-none">
+            <LinkButton to="/app/clientes/novo" state={here} variant="primary" icon={Plus} disabled={readOnly} className="flex-1 sm:flex-none">
               Novo cliente
             </LinkButton>
           </>
@@ -66,7 +68,7 @@ export default function Groups() {
             title="Nenhum grupo ainda"
             description="Crie grupos como “Assinatura SaaS” ou “Hospedagem” e depois cadastre os clientes de cada um."
             action={
-              <LinkButton to="/app/grupos/novo" variant="primary" icon={Plus} disabled={readOnly}>
+              <LinkButton to="/app/grupos/novo" state={here} variant="primary" icon={Plus} disabled={readOnly}>
                 Criar primeiro grupo
               </LinkButton>
             }
@@ -88,6 +90,7 @@ export default function Groups() {
                 <li key={g.id} className="border-b-2 border-navy">
                   <Link
                     to={`/app/grupos/${g.id}`}
+                    state={here}
                     className="grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-2 px-4 py-4 transition hover:bg-paper-2 sm:px-6 md:grid-cols-[1fr_110px_150px_170px_24px] md:gap-6 md:py-5"
                   >
                     <div className="contents md:flex md:min-w-0 md:items-center md:gap-4">
@@ -110,7 +113,7 @@ export default function Groups() {
             })}
           </ul>
           {!readOnly && (
-            <Link to="/app/grupos/novo" className="flex items-center justify-center gap-2 border-t-2 border-dashed border-navy bg-paper-2 py-4 font-semibold text-blue hover:bg-blue-soft" style={{ marginTop: -2 }}>
+            <Link to="/app/grupos/novo" state={here} className="flex items-center justify-center gap-2 border-t-2 border-dashed border-navy bg-paper-2 py-4 font-semibold text-blue hover:bg-blue-soft" style={{ marginTop: -2 }}>
               <Plus className="size-4" strokeWidth={2.5} /> Criar novo grupo
             </Link>
           )}

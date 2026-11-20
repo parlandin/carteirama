@@ -10,6 +10,7 @@ import { centsToInput, currentMonth, digits, formatPhone, maskDocument, maskMone
 import { resetAutoGenerate, useClient, useGroups, useInvalidateData } from "../../lib/queries";
 import { useToast } from "../../lib/toast";
 import type { Client, ClientStatus } from "../../lib/types";
+import { useOrigin } from "../../lib/origin";
 import { useForm } from "../../lib/useForm";
 
 export default function ClientFormPage() {
@@ -34,6 +35,7 @@ function ClientForm({ initial }: { initial?: Client }) {
   const readOnly = isReadOnly(me);
   const { data: groups, isLoading: loadingGroups } = useGroups(currentMonth());
   const editing = !!initial;
+  const origin = useOrigin(editing ? { to: `/app/clientes/${initial!.id}`, label: initial!.name } : { to: "/app/clientes", label: "Clientes" });
   const [busy, setBusy] = useState(false);
   const [extras, setExtras] = useState<ExtraDraft[]>([]);
   const [extraErrors, setExtraErrors] = useState<ExtraErrors[]>([]);
@@ -105,7 +107,8 @@ function ClientForm({ initial }: { initial?: Client }) {
       } else {
         toast.show(editing ? "Cliente atualizado." : "Cliente cadastrado.");
       }
-      navigate(`/app/clientes/${saved.id}`, { replace: true });
+      if (editing) origin.goBack();
+      else navigate(`/app/clientes/${saved.id}`, { replace: true, state: origin.carry });
     } catch (err) {
       fail(err);
     } finally {
@@ -118,7 +121,7 @@ function ClientForm({ initial }: { initial?: Client }) {
   if (!editing && groups && groups.length === 0) {
     return (
       <>
-        <PageHeader back={{ to: "/app/clientes", label: "Clientes" }} eyebrow="// Novo cadastro" title="Cadastrar cliente" />
+        <PageHeader back={origin.back} eyebrow="// Novo cadastro" title="Cadastrar cliente" />
         <Card>
           <EmptyState
             icon={Layers}
@@ -140,7 +143,7 @@ function ClientForm({ initial }: { initial?: Client }) {
   return (
     <>
       <PageHeader
-        back={editing ? { to: `/app/clientes/${initial!.id}`, label: initial!.name } : { to: "/app/clientes", label: "Clientes" }}
+        back={origin.back}
         eyebrow={editing ? "// Editar cadastro" : "// Novo cadastro"}
         title={editing ? "Editar cliente" : "Cadastrar cliente"}
         subtitle={
@@ -275,7 +278,7 @@ function ClientForm({ initial }: { initial?: Client }) {
         </Card>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button onClick={() => navigate(-1)}>Cancelar</Button>
+          <Button onClick={origin.goBack}>Cancelar</Button>
           <Button type="submit" variant="primary" icon={Check} loading={busy} disabled={readOnly || archived}>
             Salvar cliente
           </Button>
