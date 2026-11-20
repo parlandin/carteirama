@@ -1,5 +1,6 @@
 import { CreditCard, Lock, ReceiptText } from "lucide-react";
 import { useState } from "react";
+import { ResumeSubscriptionButton } from "../../components/ResumeSubscriptionButton";
 import { Button, Card, EmptyState, ErrorState, Eyebrow, LinkButton, Loading, Modal, PageHeader, StatusPill, TableHead, TotalBar } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { useMe } from "../../lib/auth";
@@ -40,6 +41,7 @@ export default function Subscription() {
   const paidTotal = paid.reduce((s, i) => s + i.amount_cents, 0);
   const openInvoice = invoices?.find((i) => i.status === "pending");
   const canCancel = sub.status !== "cancelled" && !sub.cancel_at_period_end;
+  const payable = sub.status !== "cancelled" && !sub.cancel_at_period_end;
 
   async function checkout() {
     setCheckingOut(true);
@@ -90,7 +92,13 @@ export default function Subscription() {
                 Cancelar assinatura
               </button>
             ) : (
-              sub.cancel_at_period_end && <p className="text-sm text-white/70">O cancelamento já está agendado.</p>
+              sub.cancel_at_period_end &&
+              sub.status !== "cancelled" && (
+                <div className="flex flex-col items-start gap-3">
+                  <p className="text-sm text-white/80">Mudou de ideia? Desfaça o cancelamento para continuar usando e voltar a pagar as faturas.</p>
+                  <ResumeSubscriptionButton variant="amber" className="w-full sm:w-auto" />
+                </div>
+              )
             )}
           </div>
         </Card>
@@ -125,7 +133,12 @@ export default function Subscription() {
               </p>
             </div>
           </div>
-          {sub.status !== "cancelled" && (
+          {sub.cancel_at_period_end && sub.status !== "cancelled" && (
+            <p className="mt-6 rounded-xl border-2 border-navy bg-amber-soft px-4 py-3 text-sm font-semibold">
+              Pagamentos ficam indisponíveis enquanto o cancelamento está agendado. Mantenha a assinatura para voltar a pagar.
+            </p>
+          )}
+          {payable && (
             <div className="mt-6 flex flex-wrap gap-3">
               {openInvoice && (
                 <LinkButton to={`/app/assinatura/faturas/${openInvoice.id}`} variant="primary">
@@ -192,7 +205,7 @@ export default function Subscription() {
                     <span className="font-mono text-xs text-muted">{date(i.due_date)}</span>
                   </span>
                   <span className="text-right">
-                    {i.status === "pending" ? (
+                    {i.status === "pending" && payable ? (
                       <LinkButton to={`/app/assinatura/faturas/${i.id}`} size="sm" variant="primary">
                         Pagar
                       </LinkButton>

@@ -3,6 +3,7 @@ import { Barcode, Check, CircleCheckBig, Copy, CreditCard, QrCode, RefreshCw, Sh
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 import { PixQrCode } from "../../components/PixQrCode";
+import { ResumeSubscriptionButton } from "../../components/ResumeSubscriptionButton";
 import { Button, Card, ErrorState, Eyebrow, FormError, LinkButton, Loading, PageHeader, StatusPill } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { ME_KEY, useMe } from "../../lib/auth";
@@ -137,7 +138,8 @@ export default function InvoicePayment() {
   const { data: sub } = useSubscription();
   const { data: invoices, isLoading, error, refetch } = useInvoices();
   const invoice = invoices?.find((i) => i.id === id);
-  const pending = invoice?.status === "pending";
+  const blocked = !!sub && (sub.status === "cancelled" || sub.cancel_at_period_end);
+  const pending = invoice?.status === "pending" && !!sub && !blocked;
   const [method, setMethod] = useState<Method>("pix");
   const wasPending = useRef(false);
 
@@ -222,6 +224,25 @@ export default function InvoicePayment() {
             </Card>
           )}
 
+          {invoice.status === "pending" && blocked && sub && (
+            <Card className="p-6 sm:p-8">
+              {sub.status === "cancelled" ? (
+                <>
+                  <h2 className="text-2xl font-extrabold">Assinatura cancelada</h2>
+                  <p className="mt-2 text-muted">Esta fatura não pode mais ser paga porque a assinatura foi encerrada.</p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-extrabold">Cancelamento agendado</h2>
+                  <p className="mt-2 text-muted">
+                    Você pediu o cancelamento da assinatura, então esta fatura não precisa ser paga. Se quiser continuar usando a Carteirama, mantenha a assinatura e pague por aqui.
+                  </p>
+                  <ResumeSubscriptionButton className="mt-5 w-full sm:w-auto" />
+                </>
+              )}
+            </Card>
+          )}
+
           {pending && (
             <>
               {late && (
@@ -282,7 +303,7 @@ export default function InvoicePayment() {
               <SummaryRow label="Fatura" value={invoice.number} />
               <SummaryRow label={`Plano ${sub?.plan.name ?? ""}`.trim()} value="Mensal" />
               <SummaryRow label="Vencimento" value={date(invoice.due_date)} />
-              <SummaryRow label="Situação" value={invoice.status === "paid" ? "Paga" : invoice.status === "cancelled" ? "Cancelada" : late ? "Em atraso" : "Em aberto"} />
+              <SummaryRow label="Situação" value={invoice.status === "paid" ? "Paga" : invoice.status === "cancelled" ? "Cancelada" : blocked ? "Não precisa ser paga" : late ? "Em atraso" : "Em aberto"} />
             </dl>
             <div className="mt-4 border-t-2 border-white/30 pt-4">
               <p className="text-white/80">Total</p>
